@@ -1,0 +1,40 @@
+docs/plan-chat-history.md
+  8e7f4cb5cfecc5cf 1-178
+.env.example
+  430be48025d5d79e 5
+services/api/main.py
+  430be48025d5d79e 18-21,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "91707c5e25c23bc4072d6f1ed98af2395e666302",
+  "prompts": {
+    "430be48025d5d79e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e67833b0-20af-428f-8d59-f3baee5d6336",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 0,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    },
+    "8e7f4cb5cfecc5cf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d5c46c04-c3a1-4100-9722-1f304926bee6",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 178,
+      "overriden_lines": 0
+    }
+  }
+}
