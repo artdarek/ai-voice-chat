@@ -2,7 +2,7 @@
 
 A real-time voice and text chat powered by [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime). Speak through your microphone or type — the AI responds with voice and text simultaneously.
 
-All communication with OpenAI passes through the backend. The API key never reaches the browser.
+All communication with OpenAI passes through the backend. Users can optionally supply their own API key via the browser UI — it is stored in `localStorage` and sent to the server over the WebSocket connection, never directly to OpenAI.
 
 ---
 
@@ -74,7 +74,7 @@ cp .env.example .env
 
 | Variable | Required | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | **Yes** | Your OpenAI API key (`sk-...`) |
+| `OPENAI_API_KEY` | Optional* | Server-side OpenAI API key (`sk-...`). Can be omitted if users supply their own key via the browser UI. |
 | `REMOTE_USER` | Deploy only | SSH username on the remote server |
 | `REMOTE_HOST` | Deploy only | Remote server hostname or IP |
 | `REMOTE_PORT` | Deploy only | SSH port (default: `22`) |
@@ -83,6 +83,8 @@ cp .env.example .env
 | `REMOTE_ARTIFACT_DIR` | Deploy only | Artifact folder name (e.g. `www-artifact-aichat`) |
 
 `.env` is never committed and never sent to the browser.
+
+> *`OPENAI_API_KEY` is optional if you intend for users to provide their own keys through the browser UI. If both are present, the user's key takes priority over the server key.
 
 ---
 
@@ -179,6 +181,30 @@ make help               Show available commands
 
 ---
 
+## API Key Management
+
+The gear icon (⚙) in the top-right corner is always visible and opens the key management modal.
+
+### Key priority
+
+| Situation | Key used |
+|---|---|
+| Server key set, no user key | Server key (`OPENAI_API_KEY` env) |
+| Server key set, user added own key | User's key (overrides server) |
+| Server key set, user removes own key | Falls back to server key |
+| No server key, user added own key | User's key |
+| No server key, no user key | Connection blocked — modal opens automatically |
+
+### How it works
+
+- The frontend calls `GET /config` on load to check whether the server has a key (`{"server_key": true/false}`)
+- If the server has no key, the modal opens automatically and the Connect button is blocked until a key is provided
+- The key is stored in `localStorage` under `openai_api_key`
+- When connecting, the user key (if present) is passed as a `?api_key=` query parameter on the WebSocket URL — the backend picks it up and uses it instead of the server key
+- Removing the key immediately disconnects any active session
+
+---
+
 ## Features
 
 - **Voice input** — microphone captured via `getUserMedia`, converted Float32 → PCM16 in an `AudioWorklet`, streamed as base64 chunks over WebSocket
@@ -188,6 +214,7 @@ make help               Show available commands
 - **Server VAD** — OpenAI detects end of speech automatically (no push-to-talk)
 - **Voice selection** — choose from: `alloy`, `ash`, `ballad`, `cedar`, `coral`, `echo`, `marin`, `sage`, `shimmer`, `verse`
 - **Mute** — disables the microphone track without closing the WebSocket connection
+- **API key management** — gear icon always available; user key overrides server key; removing user key falls back to server key
 
 ---
 

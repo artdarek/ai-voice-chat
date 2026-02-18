@@ -88,19 +88,30 @@ apiKeyInput.addEventListener('keydown', (e) => {
 
 // ── Init: fetch server config ────────────────────────────────────────
 async function initConfig() {
+  let serverHasKey = false;
   try {
     const res = await fetch('/config');
     const data = await res.json();
-    requiresApiKey = !data.server_key;
+    serverHasKey = data.server_key;
+    requiresApiKey = !serverHasKey;
   } catch {
     requiresApiKey = true;
   }
 
-  if (requiresApiKey) {
-    btnSettings.style.display = 'flex';
-    updateKeyIndicator();
-    if (!getSavedKey()) openModal();
+  // Gear button always visible
+  btnSettings.style.display = 'flex';
+  updateKeyIndicator();
+
+  // Set context-aware modal description
+  const desc = document.getElementById('modal-desc');
+  if (serverHasKey) {
+    desc.textContent = 'The server has a configured API key. You can optionally override it with your own OpenAI key — it will be saved in your browser\'s local storage. Remove it to fall back to the server key.';
+  } else {
+    desc.textContent = 'This server has no configured API key. Enter your own OpenAI API key — it will be saved in your browser\'s local storage and sent to the server only when connecting.';
   }
+
+  // Auto-open modal only when key is strictly required and missing
+  if (requiresApiKey && !getSavedKey()) openModal();
 }
 
 initConfig();
@@ -211,8 +222,9 @@ async function connect() {
   source.connect(workletNode);
 
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  const wsUrl = requiresApiKey
-    ? `${protocol}://${location.host}/ws?api_key=${encodeURIComponent(getSavedKey())}`
+  const userKey = getSavedKey();
+  const wsUrl = userKey
+    ? `${protocol}://${location.host}/ws?api_key=${encodeURIComponent(userKey)}`
     : `${protocol}://${location.host}/ws`;
   ws = new WebSocket(wsUrl);
 

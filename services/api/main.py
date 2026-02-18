@@ -23,8 +23,8 @@ async def config():
 
 @app.websocket("/ws")
 async def relay(websocket: WebSocket):
-    # Use server key if available, otherwise expect one from the client
-    api_key = SERVER_API_KEY or websocket.query_params.get("api_key")
+    # User-supplied key takes priority over server key
+    api_key = websocket.query_params.get("api_key") or SERVER_API_KEY
     if not api_key:
         await websocket.close(code=4001, reason="API key required")
         return
