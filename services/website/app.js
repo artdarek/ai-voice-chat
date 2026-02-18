@@ -231,17 +231,7 @@ async function connect() {
   ws.onopen = () => {
     ws.send(JSON.stringify({
       type: 'session.update',
-      session: {
-        modalities: ['audio', 'text'],
-        voice: voiceSelect.value,
-        input_audio_transcription: { model: 'whisper-1' },
-        turn_detection: {
-          type: 'server_vad',
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 600,
-        },
-      },
+      session: { voice: voiceSelect.value },
     }));
   };
 
