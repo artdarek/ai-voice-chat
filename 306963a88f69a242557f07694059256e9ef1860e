@@ -1,0 +1,25 @@
+services/api/config.py
+  430be48025d5d79e 1-29
+services/api/main.py
+  430be48025d5d79e 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "306963a88f69a242557f07694059256e9ef1860e",
+  "prompts": {
+    "430be48025d5d79e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e67833b0-20af-428f-8d59-f3baee5d6336",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 30,
+      "total_deletions": 29,
+      "accepted_lines": 30,
+      "overriden_lines": 0
+    }
+  }
+}
