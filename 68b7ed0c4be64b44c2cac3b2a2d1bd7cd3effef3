@@ -1,0 +1,36 @@
+.env.example
+  430be48025d5d79e 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "68b7ed0c4be64b44c2cac3b2a2d1bd7cd3effef3",
+  "prompts": {
+    "430be48025d5d79e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e67833b0-20af-428f-8d59-f3baee5d6336",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 1
+    },
+    "8e7f4cb5cfecc5cf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d5c46c04-c3a1-4100-9722-1f304926bee6",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 178,
+      "overriden_lines": 0
+    }
+  }
+}
