@@ -1,0 +1,31 @@
+Makefile
+  73724416a728299a 1,10-19
+Dockerfile
+  73724416a728299a 1-11
+docker-compose.yml
+  73724416a728299a 1-8
+.gitignore
+  73724416a728299a 1-23
+.dockerignore
+  73724416a728299a 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "2f49c386e44fa1c410813c5c46257ba0a9f7246b",
+  "prompts": {
+    "73724416a728299a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05f63fd1-41a8-4524-8289-3cc9f0dbae31",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 64,
+      "total_deletions": 1,
+      "accepted_lines": 64,
+      "overriden_lines": 0
+    }
+  }
+}
