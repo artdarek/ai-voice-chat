@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice AI Chat</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Voice AI Chat</h1>
+    <div class="status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Disconnected</span>
+    </div>
+  </header>
+
+  <div id="transcript" role="log" aria-live="polite" aria-label="Conversation transcript"></div>
+
+  <footer>
+    <button id="btn-connect">Connect</button>
+    <button id="btn-mute" style="display:none">Mute</button>
+    <div class="voice-select-wrap">
+      <label for="voice-select">Voice</label>
+      <select id="voice-select" title="Voice can be changed before the first AI response">
+        <option value="alloy">Alloy</option>
+        <option value="ash">Ash</option>
+        <option value="ballad">Ballad</option>
+        <option value="coral">Coral</option>
+        <option value="echo">Echo</option>
+        <option value="fable">Fable</option>
+        <option value="nova">Nova</option>
+        <option value="onyx">Onyx</option>
+        <option value="sage">Sage</option>
+        <option value="shimmer">Shimmer</option>
+        <option value="verse">Verse</option>
+      </select>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
