@@ -9,3 +9,4 @@ __pycache__/
 .DS_Store
 README.md
 Makefile
+services/api/__pycache__/

@@ -1,5 +1,6 @@
 import os
 import asyncio
+import pathlib
 import websockets
 from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
@@ -43,5 +44,7 @@ async def relay(websocket: WebSocket):
             t.cancel()
 
 
-# StaticFiles LAST — after route registration
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# StaticFiles — for local dev only (make run); in Docker nginx serves services/website/
+STATIC_DIR = pathlib.Path(__file__).parent.parent / "website"
+if STATIC_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")

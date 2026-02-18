@@ -1,11 +1,3 @@
-FROM python:3.12-slim
+FROM nginx:alpine
 
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY main.py .
-COPY static/ static/
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY config/nginx.conf /etc/nginx/conf.d/default.conf

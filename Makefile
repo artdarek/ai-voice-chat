@@ -22,7 +22,7 @@ setup:
 
 ## Run app locally (requires setup first)
 run:
-	. .venv/bin/activate && uvicorn main:app --reload --port 8000
+	. .venv/bin/activate && cd services/api && uvicorn main:app --reload --port 8000
 
 ## Run app locally via Docker
 docker-up:
@@ -56,11 +56,11 @@ deploy-codebase:
 	ssh -t -p "$(REMOTE_PORT)" "$(REMOTE_USER)@$(REMOTE_HOST)" \
 		"mkdir -p '$(REMOTE_TMP_PATH)/$(REMOTE_ARTIFACT_DIR)'"
 	scp -r -P "$(REMOTE_PORT)" \
-		./main.py ./requirements.txt ./docker-compose.yml ./Dockerfile ./Makefile ./README.md ./.env.example ./static \
+		./services ./config ./docker-compose.yml ./Dockerfile ./Makefile ./README.md ./.env.example \
 		"$(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_TMP_PATH)/$(REMOTE_ARTIFACT_DIR)"
 	ssh -t -p "$(REMOTE_PORT)" "$(REMOTE_USER)@$(REMOTE_HOST)" \
 		"sudo mkdir -p '$(REMOTE_WWW_PATH)' && \
-		sudo rm -rf '$(REMOTE_WWW_PATH)/static' && \
+		sudo rm -rf '$(REMOTE_WWW_PATH)/services' '$(REMOTE_WWW_PATH)/config' && \
 		sudo cp -R '$(REMOTE_TMP_PATH)/$(REMOTE_ARTIFACT_DIR)/.' '$(REMOTE_WWW_PATH)/'"
 
 ## Remove temporary deploy folder on remote server
