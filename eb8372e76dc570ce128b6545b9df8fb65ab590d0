@@ -1,0 +1,33 @@
+Dockerfile
+  73724416a728299a 1,3
+config/nginx.conf
+  73724416a728299a 1-27
+docker-compose.yml
+  73724416a728299a 2,4-5,7-17
+.dockerignore
+  73724416a728299a 12
+services/api/main.py
+  73724416a728299a 3,47-50
+Makefile
+  73724416a728299a 25,59,63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "eb8372e76dc570ce128b6545b9df8fb65ab590d0",
+  "prompts": {
+    "73724416a728299a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05f63fd1-41a8-4524-8289-3cc9f0dbae31",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 118,
+      "total_deletions": 25,
+      "accepted_lines": 109,
+      "overriden_lines": 0
+    }
+  }
+}
