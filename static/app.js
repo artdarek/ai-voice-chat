@@ -9,6 +9,8 @@ let pendingUserBubble = null;
 
 const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
+const btnSend = document.getElementById('btn-send');
+const textInput = document.getElementById('text-input');
 const voiceSelect = document.getElementById('voice-select');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
@@ -19,13 +21,34 @@ function setStatus(text, state) {
   statusDot.className = 'status-dot ' + (state || '');
 }
 
+const emptyState = document.getElementById('empty-state');
+
 function addBubble(role, text) {
-  const div = document.createElement('div');
-  div.className = 'bubble ' + role;
-  div.textContent = text;
-  transcript.appendChild(div);
+  if (emptyState) emptyState.style.display = 'none';
+
+  const isUser = role.includes('user');
+  const label = isUser ? 'You' : 'AI';
+
+  const msg = document.createElement('div');
+  msg.className = 'message ' + role;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = label;
+
+  const content = document.createElement('div');
+  content.className = 'message-content';
+  content.textContent = text;
+
+  msg.appendChild(avatar);
+  msg.appendChild(content);
+  transcript.appendChild(msg);
   transcript.scrollTop = transcript.scrollHeight;
-  return div;
+
+  // return the wrapper so callers can update it;
+  // store content ref on the element for easy access
+  msg._content = content;
+  return msg;
 }
 
 function playAudioChunk(base64) {
@@ -44,6 +67,26 @@ function playAudioChunk(base64) {
   const start = Math.max(nextPlayTime, audioContext.currentTime);
   src.start(start);
   nextPlayTime = start + buf.duration;
+}
+
+function sendTextMessage() {
+  const text = textInput.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+  // Show immediately in transcript
+  addBubble('user', text);
+  textInput.value = '';
+  textInput.style.height = 'auto';
+
+  ws.send(JSON.stringify({
+    type: 'conversation.item.create',
+    item: {
+      type: 'message',
+      role: 'user',
+      content: [{ type: 'input_text', text }],
+    },
+  }));
+  ws.send(JSON.stringify({ type: 'response.create' }));
 }
 
 async function connect() {
@@ -105,10 +148,14 @@ async function connect() {
 
   ws.onclose = () => {
     setStatus('Disconnected', '');
-    btnConnect.textContent = 'Connect';
+    btnConnect.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Connect`;
+    btnConnect.classList.remove('disconnect');
     btnConnect.disabled = false;
     btnMute.style.display = 'none';
     voiceSelect.disabled = false;
+    textInput.disabled = true;
+    textInput.placeholder = 'Connect first, then type a message… (Enter to send, Shift+Enter for newline)';
+    btnSend.disabled = true;
     currentAiBubble = null;
     pendingUserBubble = null;
   };
@@ -117,9 +164,14 @@ async function connect() {
     setStatus('Connection error', 'error');
   };
 
-  btnConnect.textContent = 'Disconnect';
+  btnConnect.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Disconnect`;
+  btnConnect.classList.add('disconnect');
   btnConnect.disabled = false;
   btnMute.style.display = 'inline-flex';
+  textInput.disabled = false;
+  textInput.placeholder = 'Type a message… (Enter to send, Shift+Enter for newline)';
+  btnSend.disabled = false;
+  textInput.focus();
 }
 
 function handleEvent(event) {
@@ -139,7 +191,7 @@ function handleEvent(event) {
 
     case 'conversation.item.input_audio_transcription.completed':
       if (pendingUserBubble) {
-        pendingUserBubble.textContent = event.transcript || '';
+        pendingUserBubble._content.textContent = event.transcript || '';
         pendingUserBubble.classList.remove('pending');
         pendingUserBubble = null;
       } else if (event.transcript) {
@@ -159,7 +211,7 @@ function handleEvent(event) {
         if (!currentAiBubble) {
           currentAiBubble = addBubble('assistant streaming', '');
         }
-        currentAiBubble.textContent += event.delta;
+        currentAiBubble._content.textContent += event.delta;
         transcript.scrollTop = transcript.scrollHeight;
       }
       break;
@@ -222,11 +274,27 @@ voiceSelect.addEventListener('change', () => {
   }
 });
 
+btnSend.addEventListener('click', sendTextMessage);
+
+textInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendTextMessage();
+  }
+});
+
+textInput.addEventListener('input', () => {
+  textInput.style.height = 'auto';
+  textInput.style.height = textInput.scrollHeight + 'px';
+});
+
 btnMute.addEventListener('click', () => {
   if (!micStream) return;
   isMuted = !isMuted;
   micStream.getAudioTracks().forEach(t => (t.enabled = !isMuted));
-  btnMute.textContent = isMuted ? 'Unmute' : 'Mute';
+  document.getElementById('icon-mic').style.display = isMuted ? 'none' : '';
+  document.getElementById('icon-mic-off').style.display = isMuted ? '' : 'none';
+  btnMute.childNodes[btnMute.childNodes.length - 1].textContent = isMuted ? ' Unmute' : ' Mute';
   btnMute.classList.toggle('active', isMuted);
   setStatus(isMuted ? 'Muted' : 'Connected — speak now', isMuted ? 'muted' : 'connected');
 });
