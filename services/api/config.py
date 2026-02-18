@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from tools import TOOL_DEFINITIONS
 
 load_dotenv()
 
@@ -25,5 +26,7 @@ SESSION_CONFIG = {
             "prefix_padding_ms": 300,
             "silence_duration_ms": 600,
         },
+        "tools": TOOL_DEFINITIONS,
+        "tool_choice": "auto",
     },
 }

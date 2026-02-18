@@ -6,6 +6,7 @@ from fastapi import FastAPI, WebSocket
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from config import SERVER_API_KEY, OPENAI_WS_URL, SESSION_CONFIG
+from tools import execute_tool
 
 app = FastAPI()
 
@@ -42,6 +43,23 @@ async def relay(websocket: WebSocket):
                     await websocket.send_bytes(msg)
                 else:
                     await websocket.send_text(msg)
+                    try:
+                        event = json.loads(msg)
+                        if event.get("type") == "response.done":
+                            for item in event.get("response", {}).get("output", []):
+                                if item.get("type") == "function_call":
+                                    result = execute_tool(item["name"], item.get("arguments", "{}"))
+                                    await openai_ws.send(json.dumps({
+                                        "type": "conversation.item.create",
+                                        "item": {
+                                            "type": "function_call_output",
+                                            "call_id": item["call_id"],
+                                            "output": result,
+                                        },
+                                    }))
+                                    await openai_ws.send(json.dumps({"type": "response.create"}))
+                    except Exception:
+                        pass
 
         _, pending = await asyncio.wait(
             [
