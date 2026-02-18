@@ -6,15 +6,104 @@ let nextPlayTime = 0;
 let isMuted = false;
 let currentAiBubble = null;
 let pendingUserBubble = null;
+let requiresApiKey = false;
 
 const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
 const btnSend = document.getElementById('btn-send');
+const btnSettings = document.getElementById('btn-settings');
 const textInput = document.getElementById('text-input');
 const voiceSelect = document.getElementById('voice-select');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 const transcript = document.getElementById('transcript');
+
+// ── API Key / Modal ──────────────────────────────────────────────────
+const LS_KEY = 'openai_api_key';
+const modalBackdrop = document.getElementById('modal-backdrop');
+const apiKeyInput = document.getElementById('api-key-input');
+const keyIndicator = document.getElementById('key-indicator');
+const btnKeyRemove = document.getElementById('btn-key-remove');
+
+function getSavedKey() { return localStorage.getItem(LS_KEY) || ''; }
+
+function updateKeyIndicator() {
+  keyIndicator.className = 'key-indicator ' + (getSavedKey() ? 'set' : 'missing');
+}
+
+function openModal() {
+  const saved = getSavedKey();
+  apiKeyInput.value = saved;
+  btnKeyRemove.style.display = saved ? 'inline-flex' : 'none';
+  modalBackdrop.style.display = 'flex';
+  setTimeout(() => apiKeyInput.focus(), 50);
+}
+
+function closeModal() {
+  modalBackdrop.style.display = 'none';
+}
+
+btnSettings.addEventListener('click', openModal);
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('btn-modal-cancel').addEventListener('click', closeModal);
+
+document.getElementById('btn-key-save').addEventListener('click', () => {
+  const val = apiKeyInput.value.trim();
+  if (!val) return;
+  localStorage.setItem(LS_KEY, val);
+  updateKeyIndicator();
+  closeModal();
+});
+
+btnKeyRemove.addEventListener('click', () => {
+  localStorage.removeItem(LS_KEY);
+  apiKeyInput.value = '';
+  btnKeyRemove.style.display = 'none';
+  updateKeyIndicator();
+  if (ws) {
+    disconnect();
+    closeModal();
+  }
+});
+
+const btnEye = document.getElementById('btn-eye');
+btnEye.addEventListener('click', () => {
+  const isPassword = apiKeyInput.type === 'password';
+  apiKeyInput.type = isPassword ? 'text' : 'password';
+  document.getElementById('eye-show').style.display = isPassword ? 'none' : '';
+  document.getElementById('eye-hide').style.display = isPassword ? '' : 'none';
+});
+
+modalBackdrop.addEventListener('click', (e) => {
+  if (e.target === modalBackdrop) closeModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modalBackdrop.style.display !== 'none') closeModal();
+});
+
+apiKeyInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('btn-key-save').click();
+});
+
+// ── Init: fetch server config ────────────────────────────────────────
+async function initConfig() {
+  try {
+    const res = await fetch('/config');
+    const data = await res.json();
+    requiresApiKey = !data.server_key;
+  } catch {
+    requiresApiKey = true;
+  }
+
+  if (requiresApiKey) {
+    btnSettings.style.display = 'flex';
+    updateKeyIndicator();
+    if (!getSavedKey()) openModal();
+  }
+}
+
+initConfig();
 
 function setStatus(text, state) {
   statusText.textContent = text;
@@ -90,6 +179,11 @@ function sendTextMessage() {
 }
 
 async function connect() {
+  if (requiresApiKey && !getSavedKey()) {
+    openModal();
+    return;
+  }
+
   btnConnect.disabled = true;
   setStatus('Connecting...', 'connecting');
 
@@ -117,7 +211,10 @@ async function connect() {
   source.connect(workletNode);
 
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${protocol}://${location.host}/ws`);
+  const wsUrl = requiresApiKey
+    ? `${protocol}://${location.host}/ws?api_key=${encodeURIComponent(getSavedKey())}`
+    : `${protocol}://${location.host}/ws`;
+  ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
     ws.send(JSON.stringify({
