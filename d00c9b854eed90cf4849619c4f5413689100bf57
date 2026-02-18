@@ -1,0 +1,31 @@
+services/api/main.py
+  73724416a728299a 6,11,18-23,26-31,34
+services/website/app.js
+  73724416a728299a 9,14,21-106,182-186,214-217
+services/website/index.html
+  73724416a728299a 14-22,24-25,119-133,135-158
+config/nginx.conf
+  73724416a728299a 8-16
+services/website/style.css
+  73724416a728299a 60-104,426-610
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "d00c9b854eed90cf4849619c4f5413689100bf57",
+  "prompts": {
+    "73724416a728299a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05f63fd1-41a8-4524-8289-3cc9f0dbae31",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 406,
+      "total_deletions": 6,
+      "accepted_lines": 405,
+      "overriden_lines": 0
+    }
+  }
+}
