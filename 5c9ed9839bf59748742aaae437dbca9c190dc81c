@@ -1,0 +1,25 @@
+Makefile
+  73724416a728299a 1-2,4-8,10-15,17,21,23-27,30-34,36,40-78,80-85
+.env.example
+  73724416a728299a 3-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "5c9ed9839bf59748742aaae437dbca9c190dc81c",
+  "prompts": {
+    "73724416a728299a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05f63fd1-41a8-4524-8289-3cc9f0dbae31",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 81,
+      "total_deletions": 7,
+      "accepted_lines": 81,
+      "overriden_lines": 0
+    }
+  }
+}
