@@ -362,7 +362,9 @@ function disconnect() {
   }
   nextPlayTime = 0;
   isMuted = false;
-  btnMute.textContent = 'Mute';
+  document.getElementById('icon-mic').style.display = '';
+  document.getElementById('icon-mic-off').style.display = 'none';
+  btnMute.childNodes[btnMute.childNodes.length - 1].textContent = ' Mute';
   btnMute.classList.remove('active');
 }
 
