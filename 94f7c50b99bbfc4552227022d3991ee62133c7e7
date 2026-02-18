@@ -1,0 +1,36 @@
+services/website/app.js
+  430be48025d5d79e 365-367
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "94f7c50b99bbfc4552227022d3991ee62133c7e7",
+  "prompts": {
+    "430be48025d5d79e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e67833b0-20af-428f-8d59-f3baee5d6336",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 76,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    },
+    "8e7f4cb5cfecc5cf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d5c46c04-c3a1-4100-9722-1f304926bee6",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 359,
+      "total_deletions": 14,
+      "accepted_lines": 272,
+      "overriden_lines": 0
+    }
+  }
+}
