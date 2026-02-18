@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 SERVER_API_KEY = os.getenv("OPENAI_API_KEY")
-MODEL = "gpt-4o-realtime-preview-2024-12-17"
+MODEL = os.getenv("OPENAI_MODEL", "gpt-realtime-mini-2025-12-15")
 OPENAI_WS_URL = f"wss://api.openai.com/v1/realtime?model={MODEL}"
 
 app = FastAPI()
