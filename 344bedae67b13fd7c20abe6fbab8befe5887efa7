@@ -1,0 +1,29 @@
+services/api/tools.py
+  430be48025d5d79e 1-22
+services/api/config.py
+  430be48025d5d79e 3,29-30
+services/api/Dockerfile
+  430be48025d5d79e 8
+services/api/main.py
+  430be48025d5d79e 9,46-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "344bedae67b13fd7c20abe6fbab8befe5887efa7",
+  "prompts": {
+    "430be48025d5d79e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e67833b0-20af-428f-8d59-f3baee5d6336",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 1,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}
