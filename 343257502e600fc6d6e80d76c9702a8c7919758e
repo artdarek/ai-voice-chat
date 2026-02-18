@@ -1,0 +1,29 @@
+services/api/main.py
+  73724416a728299a 26-27
+services/website/index.html
+  73724416a728299a 15,131
+services/website/app.js
+  73724416a728299a 91,95-96,101,104-110,112-114,225-227
+README.md
+  73724416a728299a 5,77,87-88,184-207,217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "343257502e600fc6d6e80d76c9702a8c7919758e",
+  "prompts": {
+    "73724416a728299a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05f63fd1-41a8-4524-8289-3cc9f0dbae31",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 52,
+      "total_deletions": 15,
+      "accepted_lines": 50,
+      "overriden_lines": 0
+    }
+  }
+}
