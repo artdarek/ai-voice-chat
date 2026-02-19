@@ -51,14 +51,14 @@ export function createEventRouter(deps) {
           if (transcriptText) {
             pendingUserBubble._content.textContent = transcriptText;
             pendingUserBubble.classList.remove('pending');
-            appendUserMessage(transcriptText);
+            appendUserMessage(transcriptText, 'voice');
           } else {
             pendingUserBubble.remove();
           }
           setPendingUserBubble(null);
         } else if (transcriptText) {
           chatView.addBubble('user', transcriptText);
-          appendUserMessage(transcriptText);
+          appendUserMessage(transcriptText, 'voice');
         }
         break;
       }

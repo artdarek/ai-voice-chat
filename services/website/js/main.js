@@ -1,6 +1,7 @@
 import { createOutputPlayback } from './audio/outputPlayback.js';
 import { buildModelMemoryMessage } from './memory/contextBuilder.js';
 import { createEventRouter } from './realtime/eventRouter.js';
+import { downloadChatHistoryCsv } from './storage/csvExport.js';
 import { appendHistory, clearHistory, loadHistory } from './storage/historyStore.js';
 import { createChatView } from './ui/chatView.js';
 import { createSettingsModal } from './ui/settingsModal.js';
@@ -19,6 +20,7 @@ let chatHistory = [];
 let currentAiBubble = null;
 let pendingUserBubble = null;
 let isAssistantResponding = false;
+let activeSessionProvider = null;
 
 const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
@@ -55,15 +57,29 @@ function setStatus(text, state) {
 /**
  * Persists one user message to local chat history.
  */
-function appendUserMessage(text) {
-  chatHistory = appendHistory(chatHistory, 'user', text);
+function appendUserMessage(text, inputType = 'text') {
+  chatHistory = appendHistory(
+    chatHistory,
+    'user',
+    text,
+    activeSessionProvider || settingsModal.getSelectedProvider(),
+    false,
+    inputType
+  );
 }
 
 /**
  * Persists one assistant message to local chat history.
  */
-function appendAssistantMessage(text) {
-  chatHistory = appendHistory(chatHistory, 'assistant', text);
+function appendAssistantMessage(text, interrupted = false) {
+  chatHistory = appendHistory(
+    chatHistory,
+    'assistant',
+    text,
+    activeSessionProvider || settingsModal.getSelectedProvider(),
+    interrupted,
+    'n/a'
+  );
 }
 
 /**
@@ -82,7 +98,7 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
   }
 
   if (finalText) {
-    appendAssistantMessage(finalText);
+    appendAssistantMessage(finalText, interrupted);
   }
 
   bubble.classList.remove('streaming');
@@ -119,6 +135,7 @@ function setDisconnectedUi() {
   btnSend.disabled = true;
   finalizeCurrentAssistantBubble(true);
   isAssistantResponding = false;
+  activeSessionProvider = null;
   pendingUserBubble = null;
 }
 
@@ -255,45 +272,6 @@ function clearConversationMemory() {
 }
 
 /**
- * Escapes one CSV field using RFC4180-style quoting.
- */
-function escapeCsvField(value) {
-  const raw = String(value ?? '');
-  return `"${raw.replace(/"/g, '""')}"`;
-}
-
-/**
- * Creates CSV and triggers browser download for current chat history.
- */
-function downloadChatHistoryCsv() {
-  if (!chatHistory.length) {
-    return;
-  }
-
-  const header = ['id', 'createdAt', 'role', 'text'].map(escapeCsvField).join(',');
-  const rows = chatHistory.map((item) =>
-    [item.id || '', item.createdAt || '', item.role || '', item.text || '']
-      .map(escapeCsvField)
-      .join(',')
-  );
-  const csv = [header, ...rows].join('\n');
-
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const filename = `chat-history-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-/**
  * Opens clear-history confirmation modal.
  */
 function openClearConfirmModal() {
@@ -324,7 +302,7 @@ function sendTextMessage() {
   }
 
   chatView.addBubble('user', text);
-  appendUserMessage(text);
+  appendUserMessage(text, 'text');
 
   textInput.value = '';
   textInput.style.height = 'auto';
@@ -401,6 +379,7 @@ async function connect() {
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
+    activeSessionProvider = provider;
     ws.send(
       JSON.stringify({
         type: 'session.update',
@@ -457,7 +436,9 @@ btnConnect.addEventListener('click', () => {
 btnClearChat.addEventListener('click', () => {
   openClearConfirmModal();
 });
-btnDownloadChat.addEventListener('click', downloadChatHistoryCsv);
+btnDownloadChat.addEventListener('click', () => {
+  downloadChatHistoryCsv(chatHistory);
+});
 
 btnClearConfirm.addEventListener('click', () => {
   if (ws) {

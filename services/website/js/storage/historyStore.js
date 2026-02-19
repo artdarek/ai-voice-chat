@@ -8,7 +8,10 @@ function isHistoryItemValid(item) {
     item &&
     (item.role === 'user' || item.role === 'assistant') &&
     typeof item.text === 'string' &&
-    typeof item.createdAt === 'string'
+    typeof item.createdAt === 'string' &&
+    (typeof item.provider === 'string' || typeof item.provider === 'undefined') &&
+    (typeof item.interrupted === 'boolean' || typeof item.interrupted === 'undefined') &&
+    (typeof item.inputType === 'string' || typeof item.inputType === 'undefined')
   );
 }
 
@@ -27,6 +30,9 @@ function normalizeHistory(raw) {
       role: item.role,
       text: item.text,
       createdAt: item.createdAt,
+      provider: item.provider || 'unknown',
+      interrupted: Boolean(item.interrupted),
+      inputType: item.inputType || 'n/a',
     }));
 }
 
@@ -60,7 +66,14 @@ export function saveHistory(history) {
 /**
  * Appends a single message to history and persists it.
  */
-export function appendHistory(history, role, text) {
+export function appendHistory(
+  history,
+  role,
+  text,
+  provider = 'unknown',
+  interrupted = false,
+  inputType = 'n/a'
+) {
   const normalizedText = (text || '').trim();
   if (!normalizedText) {
     return history;
@@ -71,6 +84,9 @@ export function appendHistory(history, role, text) {
     role,
     text: normalizedText,
     createdAt: new Date().toISOString(),
+    provider: (provider || 'unknown').toLowerCase(),
+    interrupted: Boolean(interrupted),
+    inputType: (inputType || 'n/a').toLowerCase(),
   };
 
   return saveHistory([...history, entry]);
