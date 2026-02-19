@@ -25,6 +25,7 @@ const btnSend = document.getElementById('btn-send');
 const btnSettings = document.getElementById('btn-settings');
 const btnClearChat = document.getElementById('btn-clear-chat');
 const textInput = document.getElementById('text-input');
+const providerSelectInline = document.getElementById('provider-select-inline');
 const voiceSelect = document.getElementById('voice-select');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
@@ -86,6 +87,7 @@ function setDisconnectedUi() {
   btnConnect.classList.remove('disconnect');
   btnConnect.disabled = false;
   btnMute.style.display = 'none';
+  providerSelectInline.disabled = false;
   voiceSelect.disabled = false;
   textInput.disabled = true;
   textInput.placeholder = UI_TEXT.inputPlaceholderDisconnected;
@@ -128,6 +130,7 @@ const settingsModal = createSettingsModal(
     btnSettings,
     modalBackdrop: document.getElementById('modal-backdrop'),
     providerSelect: document.getElementById('provider-select'),
+    externalProviderSelect: providerSelectInline,
     modalTitle: document.getElementById('modal-title'),
     modalDesc: document.getElementById('modal-desc'),
     apiKeyInput: document.getElementById('api-key-input'),

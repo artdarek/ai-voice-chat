@@ -10,6 +10,7 @@ export function createSettingsModal(elements, callbacks = {}) {
     btnSettings,
     modalBackdrop,
     providerSelect,
+    externalProviderSelect,
     modalTitle,
     modalDesc,
     apiKeyInput,
@@ -59,6 +60,24 @@ export function createSettingsModal(elements, callbacks = {}) {
     const normalizedProvider = normalizeProvider(provider);
     localStorage.setItem(STORAGE_KEYS.llmProvider, normalizedProvider);
     providerSelect.value = normalizedProvider;
+    if (externalProviderSelect) {
+      externalProviderSelect.value = normalizedProvider;
+    }
+  }
+
+  function notifyProviderChanged(previousProvider) {
+    const selectedProvider = getSelectedProvider();
+    if (typeof onProviderChanged === 'function' && previousProvider !== selectedProvider) {
+      onProviderChanged(selectedProvider);
+    }
+  }
+
+  function changeProvider(provider) {
+    const previousProvider = getSelectedProvider();
+    setSelectedProvider(provider);
+    syncProviderUi();
+    updateKeyIndicator();
+    notifyProviderChanged(previousProvider);
   }
 
   function isProviderSupported(provider = getSelectedProvider()) {
@@ -148,6 +167,13 @@ export function createSettingsModal(elements, callbacks = {}) {
         option.disabled = !serverSettings.supported_realtime_providers.includes('gemini');
       }
     });
+    if (externalProviderSelect) {
+      Array.from(externalProviderSelect.options).forEach((option) => {
+        if (option.value === 'gemini') {
+          option.disabled = !serverSettings.supported_realtime_providers.includes('gemini');
+        }
+      });
+    }
 
     updateKeyIndicator();
     syncProviderUi();
@@ -159,17 +185,14 @@ export function createSettingsModal(elements, callbacks = {}) {
     btnCancel.addEventListener('click', closeModal);
 
     providerSelect.addEventListener('change', () => {
-      const previousProvider = getSelectedProvider();
       persistCurrentProviderKey();
-
-      setSelectedProvider(providerSelect.value);
-      syncProviderUi();
-      updateKeyIndicator();
-
-      if (typeof onProviderChanged === 'function' && previousProvider !== getSelectedProvider()) {
-        onProviderChanged();
-      }
+      changeProvider(providerSelect.value);
     });
+    if (externalProviderSelect) {
+      externalProviderSelect.addEventListener('change', () => {
+        changeProvider(externalProviderSelect.value);
+      });
+    }
 
     btnSave.addEventListener('click', () => {
       persistCurrentProviderKey();
@@ -224,5 +247,6 @@ export function createSettingsModal(elements, callbacks = {}) {
     openModal,
     closeModal,
     setServerSettings,
+    setSelectedProvider: changeProvider,
   };
 }

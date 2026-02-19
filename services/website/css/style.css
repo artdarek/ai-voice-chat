@@ -413,8 +413,40 @@ footer {
   padding: 4px 4px 4px 8px;
 }
 
+.selectors-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 /* ── Voice selector ── */
 .voice-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-dim);
+}
+
+#provider-select-inline {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+  padding: 2px 4px;
+}
+
+#provider-select-inline option {
+  background: var(--surface2);
+}
+
+#provider-select-inline:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.provider-select-wrap {
   display: flex;
   align-items: center;
   gap: 7px;

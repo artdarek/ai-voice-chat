@@ -72,20 +72,31 @@
 
         <!-- Voice controls row -->
         <div class="controls-bar d-flex align-items-center justify-content-between flex-wrap gap-2">
-          <div class="voice-select-wrap d-flex align-items-center">
-            <i class="bi bi-mic-fill"></i>
-            <select id="voice-select" title="Voice can be changed before the first AI response">
-              <option value="alloy">Alloy</option>
-              <option value="ash">Ash</option>
-              <option value="ballad">Ballad</option>
-              <option value="cedar">Cedar</option>
-              <option value="coral">Coral</option>
-              <option value="echo">Echo</option>
-              <option value="marin">Marin</option>
-              <option value="sage">Sage</option>
-              <option value="shimmer">Shimmer</option>
-              <option value="verse">Verse</option>
-            </select>
+          <div class="selectors-group d-flex align-items-center">
+            <div class="provider-select-wrap d-flex align-items-center">
+              <i class="bi bi-diagram-3-fill"></i>
+              <select id="provider-select-inline" title="Model provider">
+                <option value="openai">OpenAI</option>
+                <option value="azure">Azure OpenAI</option>
+                <option value="gemini" disabled>Gemini (coming soon)</option>
+              </select>
+            </div>
+
+            <div class="voice-select-wrap d-flex align-items-center">
+              <i class="bi bi-mic-fill"></i>
+              <select id="voice-select" title="Voice can be changed before the first AI response">
+                <option value="alloy">Alloy</option>
+                <option value="ash">Ash</option>
+                <option value="ballad">Ballad</option>
+                <option value="cedar">Cedar</option>
+                <option value="coral">Coral</option>
+                <option value="echo">Echo</option>
+                <option value="marin">Marin</option>
+                <option value="sage">Sage</option>
+                <option value="shimmer">Shimmer</option>
+                <option value="verse">Verse</option>
+              </select>
+            </div>
           </div>
 
           <div class="action-group d-flex align-items-center">
