@@ -76,7 +76,7 @@ cp config/.env.example .env
 |---|---|---|
 | `OPENAI_API_KEY` | Optional* | Server-side OpenAI API key (`sk-...`). Can be omitted if users supply their own key via the browser UI. |
 | `OPENAI_REALTIME_BASE_URL` | Optional | Base Realtime WebSocket URL. Default: `wss://api.openai.com/v1/realtime` |
-| `OPENAI_MODEL` | Optional | Realtime model name appended as `?model=...` to the base URL |
+| `OPENAI_REALTIME_MODEL` | Optional | Realtime model name appended as `?model=...` to the base URL |
 | `OPENAI_TRANSCRIPTION_MODEL` | Optional | Input audio transcription model. Default: `whisper-1` |
 | `OPENAI_SYSTEM_PROMPT` | Optional | System instructions sent during session initialization |
 | `REMOTE_USER` | Deploy only | SSH username on the remote server |

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from config import SERVER_API_KEY
+from config import API_KEY
 
 router = APIRouter()
 
@@ -9,4 +9,4 @@ router = APIRouter()
 @router.get("/settings")
 async def settings() -> JSONResponse:
     """Tell the frontend whether the server has a configured API key."""
-    return JSONResponse({"server_key": bool(SERVER_API_KEY)})
+    return JSONResponse({"server_key": bool(API_KEY)})
