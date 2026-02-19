@@ -1,0 +1,27 @@
+services/website/js/main.js
+  75260d157a50474f 21,69-90,119-120,204-214,279-283,292-296,307-308,397,402
+services/website/js/realtime/eventRouter.js
+  75260d157a50474f 17-20,35-39,69,78,92,97-98,104-105
+services/api/services/session_config.py
+  75260d157a50474f 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "861762420fcdaa6e283fe1873fced5df2f936da7",
+  "prompts": {
+    "75260d157a50474f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c760e-11a6-70f1-ae1c-89b8f7e77dd1",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 83,
+      "total_deletions": 27,
+      "accepted_lines": 70,
+      "overriden_lines": 0
+    }
+  }
+}
