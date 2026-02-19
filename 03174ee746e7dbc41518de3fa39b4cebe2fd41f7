@@ -1,0 +1,47 @@
+services/api/server/routes/settings.py
+  75260d157a50474f 4-10,19-25
+services/website/index.html
+  75260d157a50474f 36,114,122-132
+services/api/services/relay.py
+  75260d157a50474f 31-33
+services/api/server/routes/websocket.py
+  75260d157a50474f 3,12-18,24-26
+services/website/js/constants.js
+  75260d157a50474f 2-5,9-14,50-55
+config/.env.example
+  75260d157a50474f 1-4,9-21
+services/api/config.py
+  75260d157a50474f 6-10,12-14,18-23,27-32
+services/api/services/provider_config.py
+  75260d157a50474f 1-81
+README.md
+  75260d157a50474f 3,5,23,25,34,103,119,123-128,130,140,150,152-153,170,236,238,244-247,252-256,266,269-270
+services/website/js/ui/settingsModal.js
+  75260d157a50474f 1,3,6,12-14,17,27-50,52-56,58-65,67-71,73-74,78-100,104,113-155,161-166,168-175,180-181,186,220-222,226
+services/website/css/style.css
+  75260d157a50474f 616-649
+services/api/services/openai_ws.py
+  75260d157a50474f 1-5,7-12
+services/website/js/main.js
+  75260d157a50474f 130-132,135,150-154,183,186,188,192,194-195,264-266,271,303-308
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "03174ee746e7dbc41518de3fa39b4cebe2fd41f7",
+  "prompts": {
+    "75260d157a50474f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c760e-11a6-70f1-ae1c-89b8f7e77dd1",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 448,
+      "total_deletions": 120,
+      "accepted_lines": 428,
+      "overriden_lines": 0
+    }
+  }
+}
