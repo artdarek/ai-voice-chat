@@ -18,6 +18,7 @@ let isMuted = false;
 let chatHistory = [];
 let currentAiBubble = null;
 let pendingUserBubble = null;
+let isAssistantResponding = false;
 
 const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
@@ -65,6 +66,29 @@ function appendAssistantMessage(text) {
 }
 
 /**
+ * Finalizes currently streaming assistant bubble, keeping partial output if interrupted.
+ */
+function finalizeCurrentAssistantBubble(interrupted = false) {
+  const bubble = currentAiBubble;
+  if (!bubble) {
+    return;
+  }
+
+  let finalText = (bubble._content.textContent || '').trim();
+  if (interrupted && finalText && !/[.!?…:]$/.test(finalText)) {
+    finalText += '...';
+    bubble._content.textContent = finalText;
+  }
+
+  if (finalText) {
+    appendAssistantMessage(finalText);
+  }
+
+  bubble.classList.remove('streaming');
+  currentAiBubble = null;
+}
+
+/**
  * Applies UI state for an active websocket connection.
  */
 function setConnectedUi() {
@@ -92,7 +116,8 @@ function setDisconnectedUi() {
   textInput.disabled = true;
   textInput.placeholder = UI_TEXT.inputPlaceholderDisconnected;
   btnSend.disabled = true;
-  currentAiBubble = null;
+  finalizeCurrentAssistantBubble(true);
+  isAssistantResponding = false;
   pendingUserBubble = null;
 }
 
@@ -168,7 +193,6 @@ const eventRouter = createEventRouter({
     voiceSelect.disabled = disabled;
   },
   appendUserMessage,
-  appendAssistantMessage,
   setPendingUserBubble: (bubble) => {
     pendingUserBubble = bubble;
   },
@@ -177,6 +201,17 @@ const eventRouter = createEventRouter({
     currentAiBubble = bubble;
   },
   getCurrentAiBubble: () => currentAiBubble,
+  setAssistantResponding: (active) => {
+    isAssistantResponding = active;
+  },
+  getAssistantResponding: () => isAssistantResponding,
+  finalizeCurrentAssistantBubble,
+  requestResponseCancel: () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'response.cancel' }));
+    }
+    playback.reset();
+  },
 });
 
 /**
@@ -241,23 +276,36 @@ function sendTextMessage() {
     return;
   }
 
+  ws.send(JSON.stringify({ type: 'response.cancel' }));
+  playback.reset();
+  if (isAssistantResponding) {
+    finalizeCurrentAssistantBubble(true);
+    isAssistantResponding = false;
+  }
+
   chatView.addBubble('user', text);
   appendUserMessage(text);
 
   textInput.value = '';
   textInput.style.height = 'auto';
 
-  ws.send(
-    JSON.stringify({
-      type: 'conversation.item.create',
-      item: {
-        type: 'message',
-        role: 'user',
-        content: [{ type: 'input_text', text }],
-      },
-    })
-  );
-  ws.send(JSON.stringify({ type: 'response.create' }));
+  // Give provider a short moment to apply cancellation before creating the next turn.
+  setTimeout(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    ws.send(
+      JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text }],
+        },
+      })
+    );
+    ws.send(JSON.stringify({ type: 'response.create' }));
+  }, 50);
 }
 
 /**
@@ -346,10 +394,12 @@ async function connect() {
   };
 
   ws.onclose = () => {
+    isAssistantResponding = false;
     setDisconnectedUi();
   };
 
   ws.onerror = () => {
+    isAssistantResponding = false;
     setStatus(STATUS_TEXT.connectionError, STATUS_STATE.error);
   };
 

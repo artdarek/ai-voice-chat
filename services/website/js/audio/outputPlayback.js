@@ -4,6 +4,7 @@
 export function createOutputPlayback() {
   let audioContext = null;
   let nextPlayTime = 0;
+  const activeSources = new Set();
 
   /**
    * Sets/updates active AudioContext used for playback.
@@ -17,7 +18,15 @@ export function createOutputPlayback() {
    * Resets playback clock used for chunk scheduling.
    */
   function reset() {
-    nextPlayTime = 0;
+    for (const src of activeSources) {
+      try {
+        src.stop();
+      } catch {
+        // Source may already be stopped; ignore.
+      }
+    }
+    activeSources.clear();
+    nextPlayTime = audioContext ? audioContext.currentTime : 0;
   }
 
   /**
@@ -45,6 +54,10 @@ export function createOutputPlayback() {
     const src = audioContext.createBufferSource();
     src.buffer = buf;
     src.connect(audioContext.destination);
+    activeSources.add(src);
+    src.onended = () => {
+      activeSources.delete(src);
+    };
     const start = Math.max(nextPlayTime, audioContext.currentTime);
     src.start(start);
     nextPlayTime = start + buf.duration;

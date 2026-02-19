@@ -1,0 +1,95 @@
+# Plan: Przerywanie Odpowiedzi Asystenta (Barge-In: Voice + Text)
+
+## Podsumowanie
+Wdrożymy pełne przerywanie aktualnej odpowiedzi asystenta, gdy użytkownik zacznie mówić albo wyśle nowy tekst.
+Cel: asystent ma natychmiast przerwać czytanie/streaming poprzedniej odpowiedzi i przejść do obsługi nowego inputu.
+
+## Uzgodnione decyzje
+- Tryb: `Auto + manual`
+- Historia: urwana odpowiedź zostaje w czacie (jako urwana)
+- Strategia API: `interrupt_response + response.cancel`
+
+## Zmiany techniczne
+
+1. Backend: konfiguracja sesji realtime
+- Plik: `services/api/services/session_config.py`
+- W `turn_detection` dodać:
+  - `interrupt_response: true`
+- Efekt:
+  - przy wykryciu nowej mowy przez VAD model automatycznie przerywa bieżącą odpowiedź.
+
+2. Frontend: manualne przerywanie przy nowym tekście
+- Plik: `services/website/js/main.js`
+- W `sendTextMessage()` przed `conversation.item.create`:
+  - jeśli trwa aktywna odpowiedź (stream audio/tekst), wyślij `{"type":"response.cancel"}`
+  - zresetuj lokalne odtwarzanie (`playback.reset()`), aby natychmiast uciąć audio.
+- Następnie normalnie wyślij nową wiadomość i `response.create`.
+
+3. Frontend: status „czy trwa odpowiedź”
+- Pliki:
+  - `services/website/js/realtime/eventRouter.js`
+  - `services/website/js/main.js`
+- Dodać flagę stanu (np. `isAssistantResponding`) ustawianą na:
+  - `true` przy pierwszym `response.audio.delta` lub `response.audio_transcript.delta`
+  - `false` przy `response.done` / błędzie / rozłączeniu / manualnym cancel
+- Ta flaga będzie warunkiem wysłania `response.cancel`.
+
+4. Frontend: obsługa urwanej odpowiedzi w UI
+- Plik: `services/website/js/realtime/eventRouter.js`
+- Gdy odpowiedź zostaje przerwana:
+  - bieżący bąbel asystenta kończymy jako „urwany” (bez dalszego streamingu),
+  - pozostaje w historii (zgodnie z decyzją).
+- Minimalna sygnalizacja:
+  - zakończenie streamingu bez kasowania treści; opcjonalnie dopięcie `...` tylko jeśli ostatni znak nie kończy wypowiedzi.
+
+5. Spójność dla voice barge-in
+- Obecne `input_audio_buffer.speech_started` już robi `playback.reset()`.
+- Utrzymać to zachowanie i dodać synchronizację z flagą „assistant responding”, żeby nie zostawić UI w stanie streamingu po przerwaniu.
+
+## Zmiany w interfejsach / kontraktach
+- Brak zmian publicznych endpointów HTTP/WS aplikacji (`/settings`, `/ws` bez nowych parametrów).
+- Zmiana kontraktu sesji do providera realtime:
+  - dodanie `turn_detection.interrupt_response=true` w `session.update`.
+- Frontend wysyła dodatkowe zdarzenie websocket do providera:
+  - `response.cancel` (manualne przerwanie).
+
+## Scenariusze testowe
+
+1. Voice interrupt (auto)
+- Start odpowiedzi asystenta (audio + tekst stream).
+- Użytkownik zaczyna mówić.
+- Oczekiwane:
+  - audio asystenta natychmiast się ucina,
+  - poprzednia odpowiedź przestaje się rozszerzać,
+  - system przechodzi do transkrypcji nowej wypowiedzi.
+
+2. Text interrupt (manual)
+- Asystent odpowiada.
+- Użytkownik wpisuje i wysyła nowy tekst.
+- Oczekiwane:
+  - wysyłany `response.cancel`,
+  - audio starej odpowiedzi zatrzymane,
+  - nowa wiadomość przetwarzana natychmiast,
+  - nowa odpowiedź startuje bez „doklejania” do starej.
+
+3. Historia urwanej odpowiedzi
+- Przerwij odpowiedź w połowie.
+- Oczekiwane:
+  - bąbel urwanej odpowiedzi zostaje widoczny,
+  - brak podwójnych wpisów i brak usuwania poprzednich wiadomości.
+
+4. Stabilność po reconnect/disconnect
+- Rozłącz podczas streamingu, połącz ponownie.
+- Oczekiwane:
+  - flaga „assistant responding” resetuje się poprawnie,
+  - brak ghost-audio po reconnect.
+
+5. Cross-provider smoke (OpenAI + Azure)
+- Te same 4 scenariusze dla obu providerów.
+- Oczekiwane:
+  - identyczne UX przerwania.
+
+## Założenia i domyślne wartości
+- Realtime provider akceptuje `turn_detection.interrupt_response`.
+- `response.cancel` jest obsługiwane przez aktywnych providerów w tym samym flow.
+- Brak nowego przycisku „Stop”; manual interrupt realizowany przez wysłanie nowego tekstu.

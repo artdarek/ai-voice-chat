@@ -10,11 +10,14 @@ export function createEventRouter(deps) {
     playback,
     setVoiceSelectDisabled,
     appendUserMessage,
-    appendAssistantMessage,
     setPendingUserBubble,
     getPendingUserBubble,
     setCurrentAiBubble,
     getCurrentAiBubble,
+    setAssistantResponding,
+    getAssistantResponding,
+    finalizeCurrentAssistantBubble,
+    requestResponseCancel,
   } = deps;
 
   /**
@@ -29,9 +32,13 @@ export function createEventRouter(deps) {
 
       case 'input_audio_buffer.speech_started': {
         setStatus(STATUS_TEXT.listening, STATUS_STATE.listening);
+        if (getAssistantResponding()) {
+          requestResponseCancel();
+          finalizeCurrentAssistantBubble(true);
+          setAssistantResponding(false);
+        }
         const pending = chatView.addBubble('user pending', UI_TEXT.pendingTranscription);
         setPendingUserBubble(pending);
-        setCurrentAiBubble(null);
         playback.reset();
         break;
       }
@@ -59,6 +66,7 @@ export function createEventRouter(deps) {
       case 'response.audio.delta':
         if (event.delta) {
           setVoiceSelectDisabled(true);
+          setAssistantResponding(true);
           playback.playAudioChunk(event.delta);
         }
         break;
@@ -67,6 +75,7 @@ export function createEventRouter(deps) {
         if (!event.delta) {
           break;
         }
+        setAssistantResponding(true);
 
         let currentAiBubble = getCurrentAiBubble();
         if (!currentAiBubble) {
@@ -80,24 +89,20 @@ export function createEventRouter(deps) {
       }
 
       case 'response.audio_transcript.done': {
-        const currentAiBubble = getCurrentAiBubble();
-        if (currentAiBubble) {
-          const finalText = (currentAiBubble._content.textContent || '').trim();
-          if (finalText) {
-            appendAssistantMessage(finalText);
-          }
-          currentAiBubble.classList.remove('streaming');
-          setCurrentAiBubble(null);
-        }
+        finalizeCurrentAssistantBubble(false);
         break;
       }
 
       case 'response.done':
+        finalizeCurrentAssistantBubble(false);
+        setAssistantResponding(false);
         setStatus(STATUS_TEXT.connected, STATUS_STATE.connected);
         break;
 
       case 'error':
         console.error('OpenAI error:', event.error);
+        finalizeCurrentAssistantBubble(true);
+        setAssistantResponding(false);
         setStatus('Error: ' + (event.error?.message || 'unknown'), STATUS_STATE.error);
         break;
     }

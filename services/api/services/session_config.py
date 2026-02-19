@@ -24,6 +24,7 @@ def build_session_config(provider: str) -> dict:
                 "threshold": 0.5,
                 "prefix_padding_ms": 300,
                 "silence_duration_ms": 600,
+                "interrupt_response": True,
             },
             "tools": TOOL_DEFINITIONS,
             "tool_choice": "auto",
