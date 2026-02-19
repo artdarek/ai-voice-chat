@@ -18,7 +18,7 @@ REMOTE_ARTIFACT_DIR ?= www-artifact-aichat
 setup:
 	python3 -m venv .venv
 	. .venv/bin/activate && pip install -r requirements.txt
-	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env — add your OPENAI_API_KEY before running"; fi
+	@if [ ! -f .env ]; then cp config/.env.example .env && echo "Created .env — add your OPENAI_API_KEY before running"; fi
 
 ## Run app locally (requires setup first)
 run:
@@ -26,7 +26,7 @@ run:
 
 ## Run app locally via Docker
 docker-up:
-	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env — add your OPENAI_API_KEY before running again"; exit 1; fi
+	@if [ ! -f .env ]; then cp config/.env.example .env && echo "Created .env — add your OPENAI_API_KEY before running again"; exit 1; fi
 	docker compose up --build --remove-orphans -d
 
 ## Stop Docker containers locally
@@ -56,7 +56,7 @@ deploy-codebase:
 	ssh -t -p "$(REMOTE_PORT)" "$(REMOTE_USER)@$(REMOTE_HOST)" \
 		"mkdir -p '$(REMOTE_TMP_PATH)/$(REMOTE_ARTIFACT_DIR)'"
 	scp -r -P "$(REMOTE_PORT)" \
-		./services ./config ./docker-compose.yml ./Dockerfile ./Makefile ./README.md ./.env.example \
+		./services ./config ./docker-compose.yml ./Dockerfile ./Makefile ./README.md \
 		"$(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_TMP_PATH)/$(REMOTE_ARTIFACT_DIR)"
 	ssh -t -p "$(REMOTE_PORT)" "$(REMOTE_USER)@$(REMOTE_HOST)" \
 		"sudo mkdir -p '$(REMOTE_WWW_PATH)' && \

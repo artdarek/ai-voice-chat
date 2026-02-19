@@ -43,6 +43,7 @@ async def relay(websocket: WebSocket):
                     await websocket.send_bytes(msg)
                 else:
                     await websocket.send_text(msg)
+                    # tools usage related code
                     try:
                         event = json.loads(msg)
                         if event.get("type") == "response.done":
