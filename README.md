@@ -13,19 +13,25 @@ Browser (Mic / Speaker)
         |
         | WebSocket  (ws://localhost/ws)
         |
-  ┌─────▼──────┐        WebSocket
-  │   nginx    │ ──────────────────────► OpenAI Realtime API
-  │  (website) │        (relay)          wss://api.openai.com/v1/realtime
+  ┌─────▼──────┐
+  │   nginx    │
+  │  (website) │
   └─────┬──────┘
         | HTTP proxy  /ws → api:8000
   ┌─────▼──────┐
   │  FastAPI   │
-  │   (api)    │
-  └────────────┘
+  │   (api)    │ ──────────────────────► OpenAI Realtime API
+  └────────────┘        WebSocket relay  wss://api.openai.com/v1/realtime
+                        (API -> OpenAI)
+```
+
+HTTP settings check at startup:
+```
+Browser ── GET /settings ──> nginx ──> FastAPI
 ```
 
 - **nginx** — serves static frontend files, proxies `/ws` to the API container with WebSocket upgrade headers
-- **FastAPI** — WebSocket relay: accepts browser connections, opens a connection to OpenAI Realtime API, and forwards messages bidirectionally
+- **FastAPI** — accepts browser WebSocket connections and relays messages to/from OpenAI over a second WebSocket connection
 
 ---
 
@@ -36,6 +42,10 @@ aichat/
 ├── config/
 │   ├── nginx.conf              # nginx: static files + /ws proxy
 │   └── .env.example            # environment variables template
+├── docs/
+│   └── plans/
+│       ├── initial-poc.md
+│       └── memory.md
 ├── services/
 │   ├── api/
 │   │   ├── Dockerfile          # python:3.12-slim
@@ -43,15 +53,19 @@ aichat/
 │   │   ├── config.py           # env/config constants
 │   │   ├── requirements.txt
 │   │   ├── server/
+│   │   │   ├── __init__.py
 │   │   │   └── routes/
+│   │   │       ├── __init__.py
 │   │   │       ├── settings.py # GET /settings
 │   │   │       └── websocket.py
 │   │   ├── services/
+│   │   │   ├── __init__.py
 │   │   │   ├── relay.py        # browser <-> OpenAI relay
 │   │   │   ├── openai_ws.py    # ws url builder
 │   │   │   ├── session_config.py
 │   │   │   └── tool_calls.py
 │   │   └── tools/
+│   │       ├── __init__.py
 │   │       ├── definitions.py
 │   │       ├── dispatcher.py
 │   │       └── handlers.py
@@ -61,12 +75,19 @@ aichat/
 │       │   └── style.css       # ChatGPT-style dark theme
 │       └── js/
 │           ├── main.js         # Frontend entrypoint (ES modules)
-│           ├── ui/             # View + modal modules
-│           ├── realtime/       # Realtime event handling
-│           ├── storage/        # localStorage chat persistence
-│           ├── memory/         # context builder for reconnect
-│           ├── audio/          # playback helpers
-│           └── audio-processor.js  # AudioWorklet: Float32 → PCM16
+│           ├── constants.js    # Shared UI/status/storage constants
+│           ├── audio-processor.js  # AudioWorklet: Float32 → PCM16
+│           ├── ui/
+│           │   ├── chatView.js
+│           │   └── settingsModal.js
+│           ├── realtime/
+│           │   └── eventRouter.js
+│           ├── storage/
+│           │   └── historyStore.js
+│           ├── memory/
+│           │   └── contextBuilder.js
+│           └── audio/
+│               └── outputPlayback.js
 ├── Dockerfile                  # nginx:alpine (website container)
 ├── docker-compose.yml          # website + api services
 ├── Makefile                    # dev / deploy commands
@@ -142,10 +163,7 @@ cp config/.env.example .env
 # 2. Build and start containers
 make docker-up
 
-# 3. View logs
-make docker-logs
-
-# 4. Stop
+# 3. Stop
 make docker-down
 ```
 
@@ -240,6 +258,9 @@ The gear icon (⚙) in the top-right corner is always visible and opens the key 
 - **Voice selection** — choose from: `alloy`, `ash`, `ballad`, `cedar`, `coral`, `echo`, `marin`, `sage`, `shimmer`, `verse`
 - **Mute** — disables the microphone track without closing the WebSocket connection
 - **API key management** — gear icon always available; user key overrides server key; removing user key falls back to server key
+- **Chat memory persistence** — transcript is stored in browser `localStorage` and restored after refresh
+- **Reconnect memory replay** — on `Connect`, recent history is sent as compact context so the model can continue the conversation
+- **Clear memory action** — trash icon clears transcript + stored history and starts next session with clean context
 
 ---
 
