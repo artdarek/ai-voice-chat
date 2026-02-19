@@ -86,11 +86,11 @@ apiKeyInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('btn-key-save').click();
 });
 
-// ── Init: fetch server config ────────────────────────────────────────
-async function initConfig() {
+// ── Init: fetch server settings ──────────────────────────────────────
+async function initSettings() {
   let serverHasKey = false;
   try {
-    const res = await fetch('/config');
+    const res = await fetch('/settings');
     const data = await res.json();
     serverHasKey = data.server_key;
     requiresApiKey = !serverHasKey;
@@ -114,7 +114,7 @@ async function initConfig() {
   if (requiresApiKey && !getSavedKey()) openModal();
 }
 
-initConfig();
+initSettings();
 
 function setStatus(text, state) {
   statusText.textContent = text;

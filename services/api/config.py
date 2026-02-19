@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-from tools import TOOL_DEFINITIONS
 
 load_dotenv()
 
@@ -12,21 +11,6 @@ SYSTEM_PROMPT = os.getenv(
     "You are a friendly and polite assistant. Be warm, helpful, and concise in your responses.",
 )
 
-OPENAI_WS_URL = f"wss://api.openai.com/v1/realtime?model={MODEL}"
-
-SESSION_CONFIG = {
-    "type": "session.update",
-    "session": {
-        "modalities": ["audio", "text"],
-        "instructions": SYSTEM_PROMPT,
-        "input_audio_transcription": {"model": TRANSCRIPTION_MODEL},
-        "turn_detection": {
-            "type": "server_vad",
-            "threshold": 0.5,
-            "prefix_padding_ms": 300,
-            "silence_duration_ms": 600,
-        },
-        "tools": TOOL_DEFINITIONS,
-        "tool_choice": "auto",
-    },
-}
+OPENAI_REALTIME_BASE_URL = os.getenv(
+    "OPENAI_REALTIME_BASE_URL", "wss://api.openai.com/v1/realtime"
+)

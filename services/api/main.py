@@ -1,77 +1,14 @@
-import json
-import asyncio
 import pathlib
-import websockets
-from fastapi import FastAPI, WebSocket
-from fastapi.responses import JSONResponse
+
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from config import SERVER_API_KEY, OPENAI_WS_URL, SESSION_CONFIG
-from tools import execute_tool
+
+from server.routes.settings import router as settings_router
+from server.routes.websocket import router as websocket_router
 
 app = FastAPI()
-
-
-@app.get("/config")
-async def config():
-    """Tell the frontend whether the server has a configured API key."""
-    return JSONResponse({"server_key": bool(SERVER_API_KEY)})
-
-
-@app.websocket("/ws")
-async def relay(websocket: WebSocket):
-    # User-supplied key takes priority over server key
-    api_key = websocket.query_params.get("api_key") or SERVER_API_KEY
-    if not api_key:
-        await websocket.close(code=4001, reason="API key required")
-        return
-
-    await websocket.accept()
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "OpenAI-Beta": "realtime=v1",
-    }
-    async with websockets.connect(OPENAI_WS_URL, additional_headers=headers) as openai_ws:
-        await openai_ws.send(json.dumps(SESSION_CONFIG))
-
-        async def browser_to_openai():
-            async for msg in websocket.iter_text():
-                await openai_ws.send(msg)
-
-        async def openai_to_browser():
-            async for msg in openai_ws:
-                if isinstance(msg, bytes):
-                    await websocket.send_bytes(msg)
-                else:
-                    await websocket.send_text(msg)
-                    # tools usage related code
-                    try:
-                        event = json.loads(msg)
-                        if event.get("type") == "response.done":
-                            for item in event.get("response", {}).get("output", []):
-                                if item.get("type") == "function_call":
-                                    result = execute_tool(item["name"], item.get("arguments", "{}"))
-                                    await openai_ws.send(json.dumps({
-                                        "type": "conversation.item.create",
-                                        "item": {
-                                            "type": "function_call_output",
-                                            "call_id": item["call_id"],
-                                            "output": result,
-                                        },
-                                    }))
-                                    await openai_ws.send(json.dumps({"type": "response.create"}))
-                    except Exception:
-                        pass
-
-        _, pending = await asyncio.wait(
-            [
-                asyncio.create_task(browser_to_openai()),
-                asyncio.create_task(openai_to_browser()),
-            ],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        for t in pending:
-            t.cancel()
-
+app.include_router(settings_router)
+app.include_router(websocket_router)
 
 # StaticFiles — for local dev only (make run); in Docker nginx serves services/website/
 STATIC_DIR = pathlib.Path(__file__).parent.parent / "website"

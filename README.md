@@ -34,7 +34,8 @@ Browser (Mic / Speaker)
 ```
 aichat/
 ├── config/
-│   └── nginx.conf              # nginx: static files + /ws proxy
+│   ├── nginx.conf              # nginx: static files + /ws proxy
+│   └── .env.example            # environment variables template
 ├── services/
 │   ├── api/
 │   │   ├── Dockerfile          # python:3.12-slim
@@ -48,7 +49,6 @@ aichat/
 ├── Dockerfile                  # nginx:alpine (website container)
 ├── docker-compose.yml          # website + api services
 ├── Makefile                    # dev / deploy commands
-├── .env.example                # environment variables template
 └── README.md
 ```
 
@@ -69,12 +69,16 @@ aichat/
 Copy the template and fill in your values:
 
 ```bash
-cp .env.example .env
+cp config/.env.example .env
 ```
 
 | Variable | Required | Description |
 |---|---|---|
 | `OPENAI_API_KEY` | Optional* | Server-side OpenAI API key (`sk-...`). Can be omitted if users supply their own key via the browser UI. |
+| `OPENAI_REALTIME_BASE_URL` | Optional | Base Realtime WebSocket URL. Default: `wss://api.openai.com/v1/realtime` |
+| `OPENAI_MODEL` | Optional | Realtime model name appended as `?model=...` to the base URL |
+| `OPENAI_TRANSCRIPTION_MODEL` | Optional | Input audio transcription model. Default: `whisper-1` |
+| `OPENAI_SYSTEM_PROMPT` | Optional | System instructions sent during session initialization |
 | `REMOTE_USER` | Deploy only | SSH username on the remote server |
 | `REMOTE_HOST` | Deploy only | Remote server hostname or IP |
 | `REMOTE_PORT` | Deploy only | SSH port (default: `22`) |
@@ -111,7 +115,7 @@ App available at **http://localhost:8000**
 
 ```bash
 # 1. Generate .env (if not done yet)
-cp .env.example .env
+cp config/.env.example .env
 # Add your OPENAI_API_KEY to .env
 
 # 2. Build and start containers
@@ -152,7 +156,7 @@ make deploy
 ```
 
 This runs three steps:
-1. **`deploy-codebase`** — uploads `services/`, `config/`, `docker-compose.yml`, `Dockerfile`, `Makefile`, `.env.example` via SCP
+1. **`deploy-codebase`** — uploads `services/`, `config/`, `docker-compose.yml`, `Dockerfile`, `Makefile`, `README.md` via SCP
 2. **`deploy-docker-reload`** — SSHes in, runs `docker compose stop && docker compose up --build --remove-orphans -d`
 3. **`deploy-clean`** — removes the temporary upload folder from the server
 
@@ -197,7 +201,7 @@ The gear icon (⚙) in the top-right corner is always visible and opens the key 
 
 ### How it works
 
-- The frontend calls `GET /config` on load to check whether the server has a key (`{"server_key": true/false}`)
+- The frontend calls `GET /settings` on load to check whether the server has a key (`{"server_key": true/false}`)
 - If the server has no key, the modal opens automatically and the Connect button is blocked until a key is provided
 - The key is stored in `localStorage` under `openai_api_key`
 - When connecting, the user key (if present) is passed as a `?api_key=` query parameter on the WebSocket URL — the backend picks it up and uses it instead of the server key

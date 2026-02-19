@@ -1,5 +1,3 @@
-import json
-
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -12,11 +10,3 @@ TOOL_DEFINITIONS = [
         },
     }
 ]
-
-
-def execute_tool(name: str, arguments_json: str) -> str:
-    if name == "get_ai_team_members":
-        return json.dumps({
-            "members": ["Darek", "Marcin", "Dawid", "Łukasz", "Jerzy", "Kacper", "Oskar", "Maciek"]
-        })
-    return json.dumps({"error": f"Unknown tool: {name}"})
