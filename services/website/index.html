@@ -4,27 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Voice AI Chat</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    rel="stylesheet"
+  />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div class="layout">
+  <div class="layout app-shell container-fluid px-0 d-flex flex-column min-vh-100">
 
-    <header>
+    <header class="container-xl d-flex align-items-center justify-content-between">
       <span class="header-title">Voice AI Chat</span>
-      <div class="header-right">
+      <div class="header-right d-flex align-items-center">
         <button id="btn-clear-chat" class="btn-icon clear-chat" aria-label="Clear chat memory" title="Clear chat memory">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
+          <i class="bi bi-trash3"></i>
         </button>
         <button id="btn-settings" class="btn-icon" aria-label="API Key settings" title="Configure OpenAI API Key">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
+          <i class="bi bi-gear"></i>
           <span class="key-indicator" id="key-indicator"></span>
         </button>
         <div class="status">
@@ -34,25 +34,20 @@
       </div>
     </header>
 
-    <main id="transcript" role="log" aria-live="polite" aria-label="Conversation transcript">
+    <main id="transcript" class="container-xl flex-grow-1" role="log" aria-live="polite" aria-label="Conversation transcript">
       <div class="empty-state" id="empty-state">
         <div class="empty-icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 2a3 3 0 0 1 3 3v4a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
-            <path d="M19 10a7 7 0 0 1-14 0"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-            <line x1="9" y1="21" x2="15" y2="21"/>
-          </svg>
+          <i class="bi bi-mic"></i>
         </div>
         <p>Press <strong>Connect</strong> to start — speak or type</p>
       </div>
     </main>
 
-    <footer>
+    <footer class="container-xl">
       <div class="controls-wrap">
 
         <!-- Text input row -->
-        <div class="input-row">
+        <div class="input-row d-flex align-items-end gap-2">
           <textarea
             id="text-input"
             placeholder="Connect first, then type a message… (Enter to send, Shift+Enter for newline)"
@@ -60,20 +55,14 @@
             disabled
           ></textarea>
           <button id="btn-send" disabled aria-label="Send message">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
+            <i class="bi bi-send-fill"></i>
           </button>
         </div>
 
         <!-- Voice controls row -->
-        <div class="controls-bar">
-          <div class="voice-select-wrap">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2a3 3 0 0 1 3 3v4a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
-              <path d="M19 10a7 7 0 0 1-14 0"/>
-            </svg>
+        <div class="controls-bar d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="voice-select-wrap d-flex align-items-center">
+            <i class="bi bi-mic-fill"></i>
             <select id="voice-select" title="Voice can be changed before the first AI response">
               <option value="alloy">Alloy</option>
               <option value="ash">Ash</option>
@@ -88,32 +77,15 @@
             </select>
           </div>
 
-          <div class="btn-group">
+          <div class="action-group d-flex align-items-center">
             <button id="btn-mute" style="display:none" aria-label="Mute microphone">
-              <svg id="icon-mic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2a3 3 0 0 1 3 3v4a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
-                <path d="M19 10a7 7 0 0 1-14 0"/>
-                <line x1="12" y1="17" x2="12" y2="21"/>
-                <line x1="9" y1="21" x2="15" y2="21"/>
-              </svg>
-              <svg id="icon-mic-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-                <line x1="2" y1="2" x2="22" y2="22"/>
-                <path d="M18.89 13.23A7 7 0 0 0 19 12"/>
-                <path d="M5 10a7 7 0 0 0 12 5"/>
-                <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/>
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12"/>
-                <line x1="12" y1="17" x2="12" y2="21"/>
-                <line x1="9" y1="21" x2="15" y2="21"/>
-              </svg>
-              Mute
+              <i id="icon-mic" class="bi bi-mic-fill"></i>
+              <i id="icon-mic-off" class="bi bi-mic-mute-fill" style="display:none"></i>
+              <span id="btn-mute-label">Mute</span>
             </button>
 
             <button id="btn-connect">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="16"/>
-                <line x1="8" y1="12" x2="16" y2="12"/>
-              </svg>
+              <i class="bi bi-plus-circle"></i>
               Connect
             </button>
           </div>
@@ -125,38 +97,31 @@
   </div>
 
   <!-- API Key Modal -->
-  <div class="modal-backdrop" id="modal-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal">
-      <div class="modal-header">
+  <div class="app-modal-backdrop" id="modal-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="app-modal">
+      <div class="app-modal-header">
         <h2 id="modal-title">OpenAI API Key</h2>
-        <button class="modal-close" id="modal-close" aria-label="Close">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+        <button class="app-modal-close" id="modal-close" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
-      <p class="modal-desc" id="modal-desc"></p>
+      <p class="app-modal-desc" id="modal-desc"></p>
 
-      <div class="modal-field">
+      <div class="app-modal-field">
         <label for="api-key-input">API Key</label>
         <div class="input-wrap">
           <input type="password" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" />
           <button class="btn-eye" id="btn-eye" type="button" aria-label="Toggle visibility">
-            <svg id="eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-            </svg>
-            <svg id="eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
+            <i id="eye-show" class="bi bi-eye"></i>
+            <i id="eye-hide" class="bi bi-eye-slash" style="display:none"></i>
           </button>
         </div>
       </div>
 
-      <div class="modal-actions">
+      <div class="app-modal-actions">
         <button class="btn-danger" id="btn-key-remove" style="display:none">Remove key</button>
-        <div class="modal-actions-right">
+        <div class="app-modal-actions-right">
           <button class="btn-secondary" id="btn-modal-cancel">Cancel</button>
           <button class="btn-primary" id="btn-key-save">Save</button>
         </div>
@@ -164,6 +129,30 @@
     </div>
   </div>
 
+  <!-- Clear History Confirmation Modal -->
+  <div class="app-modal-backdrop" id="clear-confirm-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="clear-confirm-title">
+    <div class="app-modal">
+      <div class="app-modal-header">
+        <h2 id="clear-confirm-title">Delete chat history?</h2>
+        <button class="app-modal-close" id="clear-confirm-close" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <p class="app-modal-desc">
+        This action will permanently remove all conversation history from this browser.
+      </p>
+
+      <div class="app-modal-actions">
+        <div class="app-modal-actions-right">
+          <button class="btn-secondary" id="btn-clear-cancel">Cancel</button>
+          <button class="btn-danger" id="btn-clear-confirm">Delete history</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

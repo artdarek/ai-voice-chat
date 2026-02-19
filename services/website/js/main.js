@@ -35,6 +35,11 @@ const emptyState = document.getElementById('empty-state');
 const modalDesc = document.getElementById('modal-desc');
 const iconMic = document.getElementById('icon-mic');
 const iconMicOff = document.getElementById('icon-mic-off');
+const btnMuteLabel = document.getElementById('btn-mute-label');
+const clearConfirmBackdrop = document.getElementById('clear-confirm-backdrop');
+const clearConfirmClose = document.getElementById('clear-confirm-close');
+const btnClearCancel = document.getElementById('btn-clear-cancel');
+const btnClearConfirm = document.getElementById('btn-clear-confirm');
 
 const chatView = createChatView(transcript, emptyState);
 const playback = createOutputPlayback();
@@ -65,7 +70,7 @@ function appendAssistantMessage(text) {
  * Applies UI state for an active websocket connection.
  */
 function setConnectedUi() {
-  btnConnect.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ${UI_TEXT.disconnectButtonLabel}`;
+  btnConnect.innerHTML = `<i class="bi bi-x-circle"></i> ${UI_TEXT.disconnectButtonLabel}`;
   btnConnect.classList.add('disconnect');
   btnConnect.disabled = false;
   btnMute.style.display = 'inline-flex';
@@ -80,7 +85,7 @@ function setConnectedUi() {
  */
 function setDisconnectedUi() {
   setStatus(STATUS_TEXT.disconnected, '');
-  btnConnect.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> ${UI_TEXT.connectButtonLabel}`;
+  btnConnect.innerHTML = `<i class="bi bi-plus-circle"></i> ${UI_TEXT.connectButtonLabel}`;
   btnConnect.classList.remove('disconnect');
   btnConnect.disabled = false;
   btnMute.style.display = 'none';
@@ -117,7 +122,7 @@ function disconnect() {
   isMuted = false;
   iconMic.style.display = '';
   iconMicOff.style.display = 'none';
-  btnMute.childNodes[btnMute.childNodes.length - 1].textContent = UI_TEXT.muteButtonLabel;
+  btnMuteLabel.textContent = UI_TEXT.muteButtonLabel;
   btnMute.classList.remove('active');
 }
 
@@ -209,6 +214,20 @@ function clearConversationMemory() {
   chatView.clearTranscriptView();
   currentAiBubble = null;
   pendingUserBubble = null;
+}
+
+/**
+ * Opens clear-history confirmation modal.
+ */
+function openClearConfirmModal() {
+  clearConfirmBackdrop.style.display = 'flex';
+}
+
+/**
+ * Closes clear-history confirmation modal.
+ */
+function closeClearConfirmModal() {
+  clearConfirmBackdrop.style.display = 'none';
 }
 
 /**
@@ -335,11 +354,25 @@ btnConnect.addEventListener('click', () => {
 });
 
 btnClearChat.addEventListener('click', () => {
+  openClearConfirmModal();
+});
+
+btnClearConfirm.addEventListener('click', () => {
   if (ws) {
     disconnect();
   }
   clearConversationMemory();
   setDisconnectedUi();
+  closeClearConfirmModal();
+});
+
+btnClearCancel.addEventListener('click', closeClearConfirmModal);
+clearConfirmClose.addEventListener('click', closeClearConfirmModal);
+
+clearConfirmBackdrop.addEventListener('click', (e) => {
+  if (e.target === clearConfirmBackdrop) {
+    closeClearConfirmModal();
+  }
 });
 
 voiceSelect.addEventListener('change', () => {
@@ -367,6 +400,12 @@ textInput.addEventListener('input', () => {
   textInput.style.height = textInput.scrollHeight + 'px';
 });
 
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && clearConfirmBackdrop.style.display !== 'none') {
+    closeClearConfirmModal();
+  }
+});
+
 btnMute.addEventListener('click', () => {
   if (!micStream) {
     return;
@@ -379,7 +418,7 @@ btnMute.addEventListener('click', () => {
 
   iconMic.style.display = isMuted ? 'none' : '';
   iconMicOff.style.display = isMuted ? '' : 'none';
-  btnMute.childNodes[btnMute.childNodes.length - 1].textContent = isMuted ? UI_TEXT.unmuteButtonLabel : UI_TEXT.muteButtonLabel;
+  btnMuteLabel.textContent = isMuted ? UI_TEXT.unmuteButtonLabel : UI_TEXT.muteButtonLabel;
   btnMute.classList.toggle('active', isMuted);
   setStatus(isMuted ? STATUS_TEXT.muted : STATUS_TEXT.connected, isMuted ? STATUS_STATE.muted : STATUS_STATE.connected);
 });
