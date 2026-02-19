@@ -24,6 +24,7 @@ const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
 const btnSend = document.getElementById('btn-send');
 const btnSettings = document.getElementById('btn-settings');
+const btnDownloadChat = document.getElementById('btn-download-chat');
 const btnClearChat = document.getElementById('btn-clear-chat');
 const textInput = document.getElementById('text-input');
 const providerSelectInline = document.getElementById('provider-select-inline');
@@ -254,6 +255,45 @@ function clearConversationMemory() {
 }
 
 /**
+ * Escapes one CSV field using RFC4180-style quoting.
+ */
+function escapeCsvField(value) {
+  const raw = String(value ?? '');
+  return `"${raw.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Creates CSV and triggers browser download for current chat history.
+ */
+function downloadChatHistoryCsv() {
+  if (!chatHistory.length) {
+    return;
+  }
+
+  const header = ['id', 'createdAt', 'role', 'text'].map(escapeCsvField).join(',');
+  const rows = chatHistory.map((item) =>
+    [item.id || '', item.createdAt || '', item.role || '', item.text || '']
+      .map(escapeCsvField)
+      .join(',')
+  );
+  const csv = [header, ...rows].join('\n');
+
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const filename = `chat-history-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
  * Opens clear-history confirmation modal.
  */
 function openClearConfirmModal() {
@@ -417,6 +457,7 @@ btnConnect.addEventListener('click', () => {
 btnClearChat.addEventListener('click', () => {
   openClearConfirmModal();
 });
+btnDownloadChat.addEventListener('click', downloadChatHistoryCsv);
 
 btnClearConfirm.addEventListener('click', () => {
   if (ws) {
