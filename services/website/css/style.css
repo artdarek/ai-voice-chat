@@ -359,7 +359,8 @@ footer {
   resize: none;
   max-height: 160px;
   overflow-y: auto;
-  padding: 2px 0;
+  padding: 8px 0;
+  text-align: left;
 }
 
 #text-input::placeholder {
@@ -368,6 +369,11 @@ footer {
 
 #text-input:disabled::placeholder {
   opacity: 0.5;
+}
+
+#text-input:disabled {
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 
 #btn-send {
@@ -410,7 +416,7 @@ footer {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 4px 4px 4px 8px;
+  padding: 4px 0 0;
 }
 
 .selectors-group {
