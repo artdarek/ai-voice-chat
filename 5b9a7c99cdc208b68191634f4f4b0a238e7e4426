@@ -1,0 +1,25 @@
+services/website/index.html
+  75260d157a50474f 33-35
+services/website/js/main.js
+  75260d157a50474f 27,258-295,460
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "5b9a7c99cdc208b68191634f4f4b0a238e7e4426",
+  "prompts": {
+    "75260d157a50474f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c760e-11a6-70f1-ae1c-89b8f7e77dd1",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 0,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}
