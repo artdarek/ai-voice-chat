@@ -159,6 +159,12 @@ body {
   color: var(--text-dim);
 }
 
+.status-inline {
+  justify-content: flex-start;
+  padding-left: 2px;
+  margin-bottom: 2px;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
