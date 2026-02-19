@@ -1,4 +1,11 @@
+// AudioWorklet runs on the audio rendering thread.
+// This processor converts microphone Float32 frames to PCM16 chunks and
+// sends them to the main thread for WebSocket streaming to the Realtime API.
+// It must stay in a standalone file loaded via audioContext.audioWorklet.addModule().
 class AudioProcessor extends AudioWorkletProcessor {
+  /**
+   * Processes one audio frame and posts PCM16 chunk to main thread.
+   */
   process(inputs) {
     const input = inputs[0];
     if (!input.length) return true;

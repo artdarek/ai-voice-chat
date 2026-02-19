@@ -39,13 +39,34 @@ aichat/
 ├── services/
 │   ├── api/
 │   │   ├── Dockerfile          # python:3.12-slim
-│   │   ├── main.py             # FastAPI WebSocket relay
-│   │   └── requirements.txt
+│   │   ├── main.py             # FastAPI app composition
+│   │   ├── config.py           # env/config constants
+│   │   ├── requirements.txt
+│   │   ├── server/
+│   │   │   └── routes/
+│   │   │       ├── settings.py # GET /settings
+│   │   │       └── websocket.py
+│   │   ├── services/
+│   │   │   ├── relay.py        # browser <-> OpenAI relay
+│   │   │   ├── openai_ws.py    # ws url builder
+│   │   │   ├── session_config.py
+│   │   │   └── tool_calls.py
+│   │   └── tools/
+│   │       ├── definitions.py
+│   │       ├── dispatcher.py
+│   │       └── handlers.py
 │   └── website/
 │       ├── index.html          # UI
-│       ├── style.css           # ChatGPT-style dark theme
-│       ├── app.js              # WebSocket client + audio pipeline
-│       └── audio-processor.js  # AudioWorklet: Float32 → PCM16
+│       ├── css/
+│       │   └── style.css       # ChatGPT-style dark theme
+│       └── js/
+│           ├── main.js         # Frontend entrypoint (ES modules)
+│           ├── ui/             # View + modal modules
+│           ├── realtime/       # Realtime event handling
+│           ├── storage/        # localStorage chat persistence
+│           ├── memory/         # context builder for reconnect
+│           ├── audio/          # playback helpers
+│           └── audio-processor.js  # AudioWorklet: Float32 → PCM16
 ├── Dockerfile                  # nginx:alpine (website container)
 ├── docker-compose.yml          # website + api services
 ├── Makefile                    # dev / deploy commands
@@ -227,4 +248,4 @@ The gear icon (⚙) in the top-right corner is always visible and opens the key 
 - `getUserMedia` requires `localhost` or an HTTPS origin — production deployments need TLS
 - The nginx WebSocket proxy sets `proxy_read_timeout 3600s` to keep long voice sessions alive
 - `StaticFiles` in `main.py` is only activated when `services/website/` exists on the filesystem (local dev). In Docker, nginx serves static files directly
-- The `audio-processor.js` AudioWorklet **must** be a separate file — it cannot be inlined
+- The `js/audio-processor.js` AudioWorklet **must** be a separate file — it cannot be inlined

@@ -1,0 +1,388 @@
+import { createOutputPlayback } from './audio/outputPlayback.js';
+import { buildModelMemoryMessage } from './memory/contextBuilder.js';
+import { createEventRouter } from './realtime/eventRouter.js';
+import { appendHistory, clearHistory, loadHistory } from './storage/historyStore.js';
+import { createChatView } from './ui/chatView.js';
+import { createSettingsModal } from './ui/settingsModal.js';
+import {
+  SETTINGS_MODAL_TEXT,
+  STATUS_STATE,
+  STATUS_TEXT,
+  UI_TEXT,
+} from './constants.js';
+
+let ws = null;
+let audioContext = null;
+let micStream = null;
+let workletNode = null;
+let isMuted = false;
+let requiresApiKey = false;
+let chatHistory = [];
+let currentAiBubble = null;
+let pendingUserBubble = null;
+
+const btnConnect = document.getElementById('btn-connect');
+const btnMute = document.getElementById('btn-mute');
+const btnSend = document.getElementById('btn-send');
+const btnSettings = document.getElementById('btn-settings');
+const btnClearChat = document.getElementById('btn-clear-chat');
+const textInput = document.getElementById('text-input');
+const voiceSelect = document.getElementById('voice-select');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const transcript = document.getElementById('transcript');
+const emptyState = document.getElementById('empty-state');
+const modalDesc = document.getElementById('modal-desc');
+const iconMic = document.getElementById('icon-mic');
+const iconMicOff = document.getElementById('icon-mic-off');
+
+const chatView = createChatView(transcript, emptyState);
+const playback = createOutputPlayback();
+
+/**
+ * Updates connection status text and indicator state.
+ */
+function setStatus(text, state) {
+  statusText.textContent = text;
+  statusDot.className = 'status-dot ' + (state || '');
+}
+
+/**
+ * Persists one user message to local chat history.
+ */
+function appendUserMessage(text) {
+  chatHistory = appendHistory(chatHistory, 'user', text);
+}
+
+/**
+ * Persists one assistant message to local chat history.
+ */
+function appendAssistantMessage(text) {
+  chatHistory = appendHistory(chatHistory, 'assistant', text);
+}
+
+/**
+ * Applies UI state for an active websocket connection.
+ */
+function setConnectedUi() {
+  btnConnect.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ${UI_TEXT.disconnectButtonLabel}`;
+  btnConnect.classList.add('disconnect');
+  btnConnect.disabled = false;
+  btnMute.style.display = 'inline-flex';
+  textInput.disabled = false;
+  textInput.placeholder = UI_TEXT.inputPlaceholderConnected;
+  btnSend.disabled = false;
+  textInput.focus();
+}
+
+/**
+ * Applies UI state for disconnected mode.
+ */
+function setDisconnectedUi() {
+  setStatus(STATUS_TEXT.disconnected, '');
+  btnConnect.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> ${UI_TEXT.connectButtonLabel}`;
+  btnConnect.classList.remove('disconnect');
+  btnConnect.disabled = false;
+  btnMute.style.display = 'none';
+  voiceSelect.disabled = false;
+  textInput.disabled = true;
+  textInput.placeholder = UI_TEXT.inputPlaceholderDisconnected;
+  btnSend.disabled = true;
+  currentAiBubble = null;
+  pendingUserBubble = null;
+}
+
+/**
+ * Closes current realtime session and tears down media resources.
+ */
+function disconnect() {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  if (workletNode) {
+    workletNode.disconnect();
+    workletNode = null;
+  }
+  if (audioContext) {
+    audioContext.close();
+    audioContext = null;
+  }
+  if (micStream) {
+    micStream.getTracks().forEach((t) => t.stop());
+    micStream = null;
+  }
+
+  playback.reset();
+  isMuted = false;
+  iconMic.style.display = '';
+  iconMicOff.style.display = 'none';
+  btnMute.childNodes[btnMute.childNodes.length - 1].textContent = UI_TEXT.muteButtonLabel;
+  btnMute.classList.remove('active');
+}
+
+const settingsModal = createSettingsModal(
+  {
+    btnSettings,
+    modalBackdrop: document.getElementById('modal-backdrop'),
+    apiKeyInput: document.getElementById('api-key-input'),
+    keyIndicator: document.getElementById('key-indicator'),
+    btnKeyRemove: document.getElementById('btn-key-remove'),
+    btnEye: document.getElementById('btn-eye'),
+    eyeShow: document.getElementById('eye-show'),
+    eyeHide: document.getElementById('eye-hide'),
+    btnClose: document.getElementById('modal-close'),
+    btnCancel: document.getElementById('btn-modal-cancel'),
+    btnSave: document.getElementById('btn-key-save'),
+  },
+  {
+    onKeyRemoved: () => {
+      if (ws) {
+        disconnect();
+      }
+    },
+  }
+);
+
+settingsModal.bind();
+
+const eventRouter = createEventRouter({
+  setStatus,
+  chatView,
+  playback,
+  setVoiceSelectDisabled: (disabled) => {
+    voiceSelect.disabled = disabled;
+  },
+  appendUserMessage,
+  appendAssistantMessage,
+  setPendingUserBubble: (bubble) => {
+    pendingUserBubble = bubble;
+  },
+  getPendingUserBubble: () => pendingUserBubble,
+  setCurrentAiBubble: (bubble) => {
+    currentAiBubble = bubble;
+  },
+  getCurrentAiBubble: () => currentAiBubble,
+});
+
+/**
+ * Loads server settings and configures API key modal behavior.
+ */
+async function initSettings() {
+  let serverHasKey = false;
+  try {
+    const res = await fetch('/settings');
+    const data = await res.json();
+    serverHasKey = data.server_key;
+    requiresApiKey = !serverHasKey;
+  } catch {
+    requiresApiKey = true;
+  }
+
+  btnSettings.style.display = 'flex';
+  settingsModal.updateKeyIndicator();
+
+  if (serverHasKey) {
+    modalDesc.textContent = SETTINGS_MODAL_TEXT.serverHasKey;
+  } else {
+    modalDesc.textContent = SETTINGS_MODAL_TEXT.serverMissingKey;
+  }
+
+  if (requiresApiKey && !settingsModal.getSavedKey()) {
+    settingsModal.openModal();
+  }
+}
+
+/**
+ * Restores persisted history into in-memory state and transcript view.
+ */
+function restoreChatHistory() {
+  chatHistory = loadHistory();
+  chatView.renderHistory(chatHistory);
+}
+
+/**
+ * Clears persisted and in-memory conversation history and transcript view.
+ */
+function clearConversationMemory() {
+  chatHistory = clearHistory();
+  chatView.clearTranscriptView();
+  currentAiBubble = null;
+  pendingUserBubble = null;
+}
+
+/**
+ * Sends one typed user message to realtime API and local transcript/history.
+ */
+function sendTextMessage() {
+  const text = textInput.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) {
+    return;
+  }
+
+  chatView.addBubble('user', text);
+  appendUserMessage(text);
+
+  textInput.value = '';
+  textInput.style.height = 'auto';
+
+  ws.send(
+    JSON.stringify({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text }],
+      },
+    })
+  );
+  ws.send(JSON.stringify({ type: 'response.create' }));
+}
+
+/**
+ * Starts microphone capture and opens realtime websocket session.
+ */
+async function connect() {
+  if (requiresApiKey && !settingsModal.getSavedKey()) {
+    settingsModal.openModal();
+    return;
+  }
+
+  btnConnect.disabled = true;
+  setStatus(STATUS_TEXT.connecting, STATUS_STATE.connecting);
+
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    setStatus(STATUS_TEXT.micAccessDenied, STATUS_STATE.error);
+    btnConnect.disabled = false;
+    return;
+  }
+
+  audioContext = new AudioContext({ sampleRate: 24000 });
+  playback.setAudioContext(audioContext);
+  await audioContext.audioWorklet.addModule('js/audio-processor.js');
+
+  const source = audioContext.createMediaStreamSource(micStream);
+  workletNode = new AudioWorkletNode(audioContext, 'audio-processor');
+
+  workletNode.port.onmessage = ({ data }) => {
+    if (data.type === 'audio' && ws && ws.readyState === WebSocket.OPEN) {
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(data.data)));
+      ws.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: base64 }));
+    }
+  };
+  source.connect(workletNode);
+
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+  const userKey = settingsModal.getSavedKey();
+  const wsUrl = userKey
+    ? `${protocol}://${location.host}/ws?api_key=${encodeURIComponent(userKey)}`
+    : `${protocol}://${location.host}/ws`;
+
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    ws.send(
+      JSON.stringify({
+        type: 'session.update',
+        session: { voice: voiceSelect.value },
+      })
+    );
+
+    const memoryContext = buildModelMemoryMessage(chatHistory);
+    if (memoryContext) {
+      ws.send(
+        JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [{ type: 'input_text', text: memoryContext }],
+          },
+        })
+      );
+    }
+  };
+
+  ws.onmessage = ({ data }) => {
+    let event;
+    try {
+      event = JSON.parse(data);
+    } catch {
+      return;
+    }
+    eventRouter.handleEvent(event);
+  };
+
+  ws.onclose = () => {
+    setDisconnectedUi();
+  };
+
+  ws.onerror = () => {
+    setStatus(STATUS_TEXT.connectionError, STATUS_STATE.error);
+  };
+
+  setConnectedUi();
+}
+
+btnConnect.addEventListener('click', () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    disconnect();
+  } else {
+    connect();
+  }
+});
+
+btnClearChat.addEventListener('click', () => {
+  if (ws) {
+    disconnect();
+  }
+  clearConversationMemory();
+  setDisconnectedUi();
+});
+
+voiceSelect.addEventListener('change', () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(
+      JSON.stringify({
+        type: 'session.update',
+        session: { voice: voiceSelect.value },
+      })
+    );
+  }
+});
+
+btnSend.addEventListener('click', sendTextMessage);
+
+textInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendTextMessage();
+  }
+});
+
+textInput.addEventListener('input', () => {
+  textInput.style.height = 'auto';
+  textInput.style.height = textInput.scrollHeight + 'px';
+});
+
+btnMute.addEventListener('click', () => {
+  if (!micStream) {
+    return;
+  }
+
+  isMuted = !isMuted;
+  micStream.getAudioTracks().forEach((t) => {
+    t.enabled = !isMuted;
+  });
+
+  iconMic.style.display = isMuted ? 'none' : '';
+  iconMicOff.style.display = isMuted ? '' : 'none';
+  btnMute.childNodes[btnMute.childNodes.length - 1].textContent = isMuted ? UI_TEXT.unmuteButtonLabel : UI_TEXT.muteButtonLabel;
+  btnMute.classList.toggle('active', isMuted);
+  setStatus(isMuted ? STATUS_TEXT.muted : STATUS_TEXT.connected, isMuted ? STATUS_STATE.muted : STATUS_STATE.connected);
+});
+
+restoreChatHistory();
+initSettings();
