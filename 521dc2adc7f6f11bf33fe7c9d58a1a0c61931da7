@@ -1,0 +1,25 @@
+services/api/config.py
+  7266e07230124018 14-16
+services/api/main.py
+  7266e07230124018 3-4,6-7,9-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "521dc2adc7f6f11bf33fe7c9d58a1a0c61931da7",
+  "prompts": {
+    "7266e07230124018": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c74a4-8a70-7d12-84f8-c8ce268e22e7",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 120,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  }
+}
