@@ -290,6 +290,31 @@ main {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
 }
 
+.message-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.message.user .message-body {
+  align-items: flex-end;
+}
+
+.message-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  color: #7b7b8a;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.message-time .bi {
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
 .message.assistant .message-content {
   border-top-left-radius: 6px;
 }
