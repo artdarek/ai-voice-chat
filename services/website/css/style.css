@@ -613,6 +613,40 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-family: inherit;
 }
 
+.select-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.select-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.select-wrap select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 10px 12px;
+  appearance: none;
+}
+
+.select-wrap select option {
+  background: var(--surface2);
+}
+
+.provider-hint {
+  font-size: 0.77rem;
+  color: var(--text-dim);
+}
+
 .btn-eye {
   background: transparent;
   border: none;

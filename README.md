@@ -1,8 +1,8 @@
 # Voice AI Chat
 
-A real-time voice and text chat powered by [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime). Speak through your microphone or type — the AI responds with voice and text simultaneously.
+A real-time voice and text chat powered by OpenAI Realtime-compatible providers. Speak through your microphone or type — the AI responds with voice and text simultaneously.
 
-All communication with OpenAI passes through the backend. Users can optionally supply their own API key via the browser UI — it is stored in `localStorage` and sent to the server over the WebSocket connection, never directly to OpenAI.
+All communication with providers passes through the backend. Users can optionally supply their own API key via the browser UI — it is stored in `localStorage` and sent to the server over the WebSocket connection, never directly to the provider.
 
 ---
 
@@ -20,9 +20,9 @@ Browser (Mic / Speaker)
         | HTTP proxy  /ws → api:8000
   ┌─────▼──────┐
   │  FastAPI   │
-  │   (api)    │ ──────────────────────► OpenAI Realtime API
+  │   (api)    │ ──────────────────────► OpenAI / Azure OpenAI Realtime
   └────────────┘        WebSocket relay  wss://api.openai.com/v1/realtime
-                        (API -> OpenAI)
+                        (API -> provider)
 ```
 
 HTTP settings check at startup:
@@ -31,7 +31,7 @@ Browser ── GET /settings ──> nginx ──> FastAPI
 ```
 
 - **nginx** — serves static frontend files, proxies `/ws` to the API container with WebSocket upgrade headers
-- **FastAPI** — accepts browser WebSocket connections and relays messages to/from OpenAI over a second WebSocket connection
+- **FastAPI** — accepts browser WebSocket connections and relays messages to/from OpenAI or Azure OpenAI over a second WebSocket connection
 
 ---
 
@@ -100,7 +100,7 @@ aichat/
 
 - Python 3.12+ (for local dev)
 - Docker + Docker Compose (for Docker dev / production)
-- OpenAI API key with Realtime API access
+- OpenAI API key or Azure OpenAI API key with Realtime API access
 - A modern browser (Chrome / Edge recommended — required for `AudioWorklet`)
 - `localhost` or HTTPS (browser requires secure context for microphone access)
 
@@ -116,11 +116,18 @@ cp config/.env.example .env
 
 | Variable | Required | Description |
 |---|---|---|
+| `DEFAULT_LLM_PROVIDER` | Optional | Default provider for new users. Supported values: `openai`, `azure`. Default: `openai` |
 | `OPENAI_API_KEY` | Optional* | Server-side OpenAI API key (`sk-...`). Can be omitted if users supply their own key via the browser UI. |
 | `OPENAI_REALTIME_BASE_URL` | Optional | Base Realtime WebSocket URL. Default: `wss://api.openai.com/v1/realtime` |
 | `OPENAI_REALTIME_MODEL` | Optional | Realtime model name appended as `?model=...` to the base URL |
+| `AZURE_OPENAI_API_KEY` | Optional* | Server-side Azure OpenAI key. Can be omitted if users supply their own key in browser UI. |
+| `AZURE_OPENAI_REALTIME_ENDPOINT` | Optional | Azure Realtime endpoint, e.g. `wss://<resource>.openai.azure.com/openai/realtime` |
+| `AZURE_OPENAI_REALTIME_DEPLOYMENT` | Optional | Azure Realtime deployment name |
+| `AZURE_OPENAI_REALTIME_API_VERSION` | Optional | Azure Realtime API version. Default: `2025-04-01-preview` |
+| `AZURE_OPENAI_TRANSCRIPTION_MODEL` | Optional | Azure transcription model used in realtime session config. Defaults to `OPENAI_TRANSCRIPTION_MODEL` value. |
+| `GEMINI_API_KEY` | Optional | Reserved for future Gemini runtime support (not used by realtime relay yet) |
 | `OPENAI_TRANSCRIPTION_MODEL` | Optional | Input audio transcription model. Default: `whisper-1` |
-| `OPENAI_SYSTEM_PROMPT` | Optional | System instructions sent during session initialization |
+| `CHAT_SYSTEM_PROMPT` | Optional | System instructions sent during session initialization |
 | `REMOTE_USER` | Deploy only | SSH username on the remote server |
 | `REMOTE_HOST` | Deploy only | Remote server hostname or IP |
 | `REMOTE_PORT` | Deploy only | SSH port (default: `22`) |
@@ -130,7 +137,7 @@ cp config/.env.example .env
 
 `.env` is never committed and never sent to the browser.
 
-> *`OPENAI_API_KEY` is optional if you intend for users to provide their own keys through the browser UI. If both are present, the user's key takes priority over the server key.
+> *Per-provider keys are optional if users provide their own keys in browser UI. If both server and user keys exist, the user's key takes priority for that provider.
 
 ---
 
@@ -140,8 +147,10 @@ cp config/.env.example .env
 # 1. Create virtualenv, install dependencies, generate .env
 make setup
 
-# 2. Add your OpenAI API key to .env
+# 2. Add provider credentials to .env (OpenAI and/or Azure)
 #    OPENAI_API_KEY=sk-...
+#    or
+#    AZURE_OPENAI_API_KEY=...
 
 # 3. Start the dev server
 make run
@@ -158,7 +167,7 @@ App available at **http://localhost:8000**
 ```bash
 # 1. Generate .env (if not done yet)
 cp config/.env.example .env
-# Add your OPENAI_API_KEY to .env
+# Add provider credentials (OpenAI and/or Azure) to .env
 
 # 2. Build and start containers
 make docker-up
@@ -224,27 +233,27 @@ make help               Show available commands
 
 ---
 
-## API Key Management
+## Provider & Key Management
 
-The gear icon (⚙) in the top-right corner is always visible and opens the key management modal.
+The gear icon (⚙) in the top-right corner is always visible and opens provider/key settings.
 
 ### Key priority
 
 | Situation | Key used |
 |---|---|
-| Server key set, no user key | Server key (`OPENAI_API_KEY` env) |
-| Server key set, user added own key | User's key (overrides server) |
-| Server key set, user removes own key | Falls back to server key |
-| No server key, user added own key | User's key |
+| Provider key set on server, no user key | Server key for selected provider |
+| Provider key set on server, user added own key | User key overrides server key for selected provider |
+| Provider key set on server, user removes own key | Falls back to server key for selected provider |
+| No server key, user added own key | User key for selected provider |
 | No server key, no user key | Connection blocked — modal opens automatically |
 
 ### How it works
 
-- The frontend calls `GET /settings` on load to check whether the server has a key (`{"server_key": true/false}`)
-- If the server has no key, the modal opens automatically and the Connect button is blocked until a key is provided
-- The key is stored in `localStorage` under `openai_api_key`
-- When connecting, the user key (if present) is passed as a `?api_key=` query parameter on the WebSocket URL — the backend picks it up and uses it instead of the server key
-- Removing the key immediately disconnects any active session
+- The frontend calls `GET /settings` on load to check default provider, supported providers, and server key availability per provider
+- If selected provider has no available key (server/user), the modal opens automatically and Connect is blocked
+- Keys are stored in `localStorage` under provider-specific keys (`openai_api_key`, `azure_api_key`, `gemini_api_key`)
+- When connecting, provider and user key (if present) are passed as WebSocket query params (`?provider=...&api_key=...`)
+- Removing the active provider key immediately disconnects any active session
 
 ---
 
@@ -254,10 +263,11 @@ The gear icon (⚙) in the top-right corner is always visible and opens the key 
 - **Voice output** — AI audio deltas decoded PCM16 → Float32 and scheduled via Web Audio API with gap-free playback
 - **Text input** — type messages in the same session; AI responds with both voice and text
 - **Streaming transcript** — AI text streamed token-by-token with a blinking cursor
-- **Server VAD** — OpenAI detects end of speech automatically (no push-to-talk)
+- **Server VAD** — provider detects end of speech automatically (no push-to-talk)
 - **Voice selection** — choose from: `alloy`, `ash`, `ballad`, `cedar`, `coral`, `echo`, `marin`, `sage`, `shimmer`, `verse`
 - **Mute** — disables the microphone track without closing the WebSocket connection
-- **API key management** — gear icon always available; user key overrides server key; removing user key falls back to server key
+- **Provider selection** — switch between OpenAI and Azure OpenAI in settings (Gemini key storage is prepared for future runtime support)
+- **API key management** — separate keys per provider; user key overrides server key; removing user key falls back to server key
 - **Chat memory persistence** — transcript is stored in browser `localStorage` and restored after refresh
 - **Reconnect memory replay** — on `Connect`, recent history is sent as compact context so the model can continue the conversation
 - **Clear memory action** — trash icon clears transcript + stored history and starts next session with clean context

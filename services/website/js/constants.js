@@ -1,6 +1,15 @@
 export const STORAGE_KEYS = {
-  apiKey: 'openai_api_key',
+  llmProvider: 'llm_provider',
+  openaiApiKey: 'openai_api_key',
+  azureApiKey: 'azure_api_key',
+  geminiApiKey: 'gemini_api_key',
   chatHistory: 'chat_history_v1',
+};
+
+export const PROVIDERS = {
+  openai: { label: 'OpenAI', keyStorageKey: STORAGE_KEYS.openaiApiKey, keyPlaceholder: 'sk-...' },
+  azure: { label: 'Azure OpenAI', keyStorageKey: STORAGE_KEYS.azureApiKey, keyPlaceholder: 'azure-api-key...' },
+  gemini: { label: 'Gemini', keyStorageKey: STORAGE_KEYS.geminiApiKey, keyPlaceholder: 'AIza...' },
 };
 
 export const HISTORY_LIMITS = {
@@ -38,10 +47,12 @@ export const UI_TEXT = {
 };
 
 export const SETTINGS_MODAL_TEXT = {
-  serverHasKey:
-    "The server has a configured API key. You can optionally override it with your own OpenAI key - it will be saved in your browser's local storage. Remove it to fall back to the server key.",
-  serverMissingKey:
-    "This server has no configured API key. Enter your own OpenAI API key - it will be saved in your browser's local storage and sent to the server only when connecting.",
+  providerServerHasKey:
+    "This provider has a server-side key configured. You can optionally override it with your own key, stored in this browser.",
+  providerServerMissingKey:
+    'No server-side key is configured for this provider. Add your own key to connect.',
+  geminiNotAvailable:
+    'Gemini key can be saved now, but Gemini Live runtime is not enabled in this version yet.',
 };
 
 export const MEMORY_CONTEXT_HEADER =

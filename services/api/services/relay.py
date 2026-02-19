@@ -27,13 +27,10 @@ async def _openai_to_browser(browser_ws: WebSocket, openai_ws) -> None:
         await handle_tool_calls_event(event, openai_ws)
 
 
-async def run_relay(browser_ws: WebSocket, api_key: str, openai_ws_url: str, session_config: dict) -> None:
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "OpenAI-Beta": "realtime=v1",
-    }
-
-    async with websockets.connect(openai_ws_url, additional_headers=headers) as openai_ws:
+async def run_relay(
+    browser_ws: WebSocket, provider_ws_url: str, provider_headers: dict[str, str], session_config: dict
+) -> None:
+    async with websockets.connect(provider_ws_url, additional_headers=provider_headers) as openai_ws:
         await openai_ws.send(json.dumps(session_config))
 
         _, pending = await asyncio.wait(

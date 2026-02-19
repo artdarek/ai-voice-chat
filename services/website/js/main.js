@@ -5,7 +5,6 @@ import { appendHistory, clearHistory, loadHistory } from './storage/historyStore
 import { createChatView } from './ui/chatView.js';
 import { createSettingsModal } from './ui/settingsModal.js';
 import {
-  SETTINGS_MODAL_TEXT,
   STATUS_STATE,
   STATUS_TEXT,
   UI_TEXT,
@@ -16,7 +15,6 @@ let audioContext = null;
 let micStream = null;
 let workletNode = null;
 let isMuted = false;
-let requiresApiKey = false;
 let chatHistory = [];
 let currentAiBubble = null;
 let pendingUserBubble = null;
@@ -32,7 +30,6 @@ const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 const transcript = document.getElementById('transcript');
 const emptyState = document.getElementById('empty-state');
-const modalDesc = document.getElementById('modal-desc');
 const iconMic = document.getElementById('icon-mic');
 const iconMicOff = document.getElementById('icon-mic-off');
 const btnMuteLabel = document.getElementById('btn-mute-label');
@@ -130,8 +127,12 @@ const settingsModal = createSettingsModal(
   {
     btnSettings,
     modalBackdrop: document.getElementById('modal-backdrop'),
+    providerSelect: document.getElementById('provider-select'),
+    modalTitle: document.getElementById('modal-title'),
+    modalDesc: document.getElementById('modal-desc'),
     apiKeyInput: document.getElementById('api-key-input'),
     keyIndicator: document.getElementById('key-indicator'),
+    providerHint: document.getElementById('provider-hint'),
     btnKeyRemove: document.getElementById('btn-key-remove'),
     btnEye: document.getElementById('btn-eye'),
     eyeShow: document.getElementById('eye-show'),
@@ -142,6 +143,11 @@ const settingsModal = createSettingsModal(
   },
   {
     onKeyRemoved: () => {
+      if (ws) {
+        disconnect();
+      }
+    },
+    onProviderChanged: () => {
       if (ws) {
         disconnect();
       }
@@ -174,26 +180,19 @@ const eventRouter = createEventRouter({
  * Loads server settings and configures API key modal behavior.
  */
 async function initSettings() {
-  let serverHasKey = false;
+  let payload = null;
   try {
     const res = await fetch('/settings');
-    const data = await res.json();
-    serverHasKey = data.server_key;
-    requiresApiKey = !serverHasKey;
+    payload = await res.json();
   } catch {
-    requiresApiKey = true;
+    payload = null;
   }
 
   btnSettings.style.display = 'flex';
-  settingsModal.updateKeyIndicator();
+  settingsModal.setServerSettings(payload || undefined);
 
-  if (serverHasKey) {
-    modalDesc.textContent = SETTINGS_MODAL_TEXT.serverHasKey;
-  } else {
-    modalDesc.textContent = SETTINGS_MODAL_TEXT.serverMissingKey;
-  }
-
-  if (requiresApiKey && !settingsModal.getSavedKey()) {
+  const provider = settingsModal.getSelectedProvider();
+  if (!settingsModal.isProviderSupported(provider) || !settingsModal.hasEffectiveKey(provider)) {
     settingsModal.openModal();
   }
 }
@@ -262,7 +261,14 @@ function sendTextMessage() {
  * Starts microphone capture and opens realtime websocket session.
  */
 async function connect() {
-  if (requiresApiKey && !settingsModal.getSavedKey()) {
+  const provider = settingsModal.getSelectedProvider();
+  if (!settingsModal.isProviderSupported(provider)) {
+    setStatus(`${provider} is not available in this version`, STATUS_STATE.error);
+    settingsModal.openModal();
+    return;
+  }
+
+  if (!settingsModal.hasEffectiveKey(provider)) {
     settingsModal.openModal();
     return;
   }
@@ -294,10 +300,12 @@ async function connect() {
   source.connect(workletNode);
 
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  const userKey = settingsModal.getSavedKey();
-  const wsUrl = userKey
-    ? `${protocol}://${location.host}/ws?api_key=${encodeURIComponent(userKey)}`
-    : `${protocol}://${location.host}/ws`;
+  const userKey = settingsModal.getSavedKey(provider);
+  const wsParams = new URLSearchParams({ provider });
+  if (userKey) {
+    wsParams.set('api_key', userKey);
+  }
+  const wsUrl = `${protocol}://${location.host}/ws?${wsParams.toString()}`;
 
   ws = new WebSocket(wsUrl);
 
