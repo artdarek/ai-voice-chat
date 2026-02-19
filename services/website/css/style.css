@@ -41,20 +41,59 @@ body {
 }
 
 /* ── Header ── */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
+.top-navbar {
+  padding: 0;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--bg);
 }
 
-.header-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
+.top-navbar .container-fluid {
+  min-height: 56px;
+}
+
+.navbar-brand {
+  margin-right: 0;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.brand-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.brand-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #d6dde6;
+  box-shadow: none;
+}
+
+.brand-icon-wrap .bi {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.brand-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #dbe6f2;
+  font-family: 'SF Mono', 'Fira Code', ui-monospace, Menlo, monospace;
 }
 
 .header-right {

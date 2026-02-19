@@ -17,24 +17,35 @@
 <body>
   <div class="layout app-shell container-fluid px-0 d-flex flex-column min-vh-100">
 
-    <header class="container-xl d-flex align-items-center justify-content-between">
-      <span class="header-title">Voice AI Chat</span>
-      <div class="header-right d-flex align-items-center">
-        <button id="btn-clear-chat" class="btn-icon clear-chat" aria-label="Clear chat memory" title="Clear chat memory">
-          <i class="bi bi-trash3"></i>
-        </button>
-        <button id="btn-settings" class="btn-icon" aria-label="API Key settings" title="Configure OpenAI API Key">
-          <i class="bi bi-gear"></i>
-          <span class="key-indicator" id="key-indicator"></span>
-        </button>
-        <div class="status">
-          <span class="status-dot" id="status-dot"></span>
-          <span id="status-text">Disconnected</span>
+    <header class="top-navbar navbar navbar-expand navbar-dark">
+      <div class="container-fluid px-3 px-md-4 d-flex align-items-center justify-content-between">
+        <span class="navbar-brand mb-0">
+          <span class="brand-mark">
+            <span class="brand-icon-wrap" aria-hidden="true">
+              <i class="bi bi-soundwave"></i>
+            </span>
+            <span class="brand-chip">
+              <span class="brand-text">AIVoice</span>
+            </span>
+          </span>
+        </span>
+        <div class="header-right d-flex align-items-center">
+          <button id="btn-clear-chat" class="btn-icon clear-chat" aria-label="Clear chat memory" title="Clear chat memory">
+            <i class="bi bi-trash3"></i>
+          </button>
+          <button id="btn-settings" class="btn-icon" aria-label="API Key settings" title="Configure OpenAI API Key">
+            <i class="bi bi-gear"></i>
+            <span class="key-indicator" id="key-indicator"></span>
+          </button>
+          <div class="status">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">Disconnected</span>
+          </div>
         </div>
       </div>
     </header>
 
-    <main id="transcript" class="container-xl flex-grow-1" role="log" aria-live="polite" aria-label="Conversation transcript">
+    <main id="transcript" class="flex-grow-1 w-100" role="log" aria-live="polite" aria-label="Conversation transcript">
       <div class="empty-state" id="empty-state">
         <div class="empty-icon">
           <i class="bi bi-mic"></i>
