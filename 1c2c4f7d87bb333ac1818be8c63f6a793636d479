@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "1c2c4f7d87bb333ac1818be8c63f6a793636d479",
+  "prompts": {
+    "7266e07230124018": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c74a4-8a70-7d12-84f8-c8ce268e22e7",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 178,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
