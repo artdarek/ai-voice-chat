@@ -83,6 +83,11 @@ header {
   color: var(--text);
 }
 
+.btn-icon.clear-chat:hover {
+  background: #4a2a2a;
+  color: #fca5a5;
+}
+
 .key-indicator {
   position: absolute;
   top: 4px;

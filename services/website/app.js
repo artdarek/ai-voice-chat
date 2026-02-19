@@ -7,25 +7,35 @@ let isMuted = false;
 let currentAiBubble = null;
 let pendingUserBubble = null;
 let requiresApiKey = false;
+let chatHistory = [];
 
 const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
 const btnSend = document.getElementById('btn-send');
 const btnSettings = document.getElementById('btn-settings');
+const btnClearChat = document.getElementById('btn-clear-chat');
 const textInput = document.getElementById('text-input');
 const voiceSelect = document.getElementById('voice-select');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 const transcript = document.getElementById('transcript');
 
-// ── API Key / Modal ──────────────────────────────────────────────────
+// -- API Key / Modal --------------------------------------------------
 const LS_KEY = 'openai_api_key';
+const LS_CHAT_HISTORY_KEY = 'chat_history_v1';
+const MAX_PERSISTED_MESSAGES = 200;
+const MAX_HISTORY_MESSAGES = 20;
+const MAX_MEMORY_CHARS = 8000;
+
 const modalBackdrop = document.getElementById('modal-backdrop');
 const apiKeyInput = document.getElementById('api-key-input');
 const keyIndicator = document.getElementById('key-indicator');
 const btnKeyRemove = document.getElementById('btn-key-remove');
+const emptyState = document.getElementById('empty-state');
 
-function getSavedKey() { return localStorage.getItem(LS_KEY) || ''; }
+function getSavedKey() {
+  return localStorage.getItem(LS_KEY) || '';
+}
 
 function updateKeyIndicator() {
   keyIndicator.className = 'key-indicator ' + (getSavedKey() ? 'set' : 'missing');
@@ -41,6 +51,117 @@ function openModal() {
 
 function closeModal() {
   modalBackdrop.style.display = 'none';
+}
+
+function isHistoryItemValid(item) {
+  return (
+    item &&
+    (item.role === 'user' || item.role === 'assistant') &&
+    typeof item.text === 'string' &&
+    typeof item.createdAt === 'string'
+  );
+}
+
+function loadChatHistory() {
+  let parsed;
+  try {
+    parsed = JSON.parse(localStorage.getItem(LS_CHAT_HISTORY_KEY) || '[]');
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .filter(isHistoryItemValid)
+    .map((item, index) => ({
+      id: item.id || `msg-${index}-${item.createdAt}`,
+      role: item.role,
+      text: item.text,
+      createdAt: item.createdAt,
+    }));
+}
+
+function saveChatHistory(history) {
+  const bounded = history.slice(-MAX_PERSISTED_MESSAGES);
+  chatHistory = bounded;
+  try {
+    localStorage.setItem(LS_CHAT_HISTORY_KEY, JSON.stringify(bounded));
+  } catch {
+    // Intentionally ignore write failures (e.g. quota exceeded).
+  }
+}
+
+function appendToHistory(role, text) {
+  const normalized = (text || '').trim();
+  if (!normalized) {
+    return;
+  }
+
+  const entry = {
+    id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    text: normalized,
+    createdAt: new Date().toISOString(),
+  };
+
+  saveChatHistory([...chatHistory, entry]);
+}
+
+function clearChatHistory() {
+  chatHistory = [];
+  localStorage.removeItem(LS_CHAT_HISTORY_KEY);
+}
+
+function clearTranscriptView() {
+  transcript.querySelectorAll('.message').forEach((node) => node.remove());
+  if (emptyState) {
+    emptyState.style.display = 'flex';
+  }
+  currentAiBubble = null;
+  pendingUserBubble = null;
+}
+
+function renderHistory(history) {
+  if (!history.length) {
+    if (emptyState) {
+      emptyState.style.display = 'flex';
+    }
+    return;
+  }
+
+  history.forEach((item) => addBubble(item.role, item.text));
+  transcript.scrollTop = transcript.scrollHeight;
+}
+
+function buildModelMemoryMessage() {
+  const recent = chatHistory.slice(-MAX_HISTORY_MESSAGES);
+  if (!recent.length) {
+    return '';
+  }
+
+  const lines = recent.map((item) => {
+    const speaker = item.role === 'user' ? 'User' : 'Assistant';
+    const normalized = item.text.replace(/\s+/g, ' ').trim();
+    return `${speaker}: ${normalized}`;
+  });
+
+  let memory = [
+    'Context from previous chat session. Use it as memory for this conversation.',
+    ...lines,
+  ].join('\n');
+
+  if (memory.length > MAX_MEMORY_CHARS) {
+    memory = '...' + memory.slice(-(MAX_MEMORY_CHARS - 3));
+  }
+
+  return memory;
+}
+
+function restoreChatHistory() {
+  chatHistory = loadChatHistory();
+  renderHistory(chatHistory);
 }
 
 btnSettings.addEventListener('click', openModal);
@@ -66,6 +187,15 @@ btnKeyRemove.addEventListener('click', () => {
   }
 });
 
+btnClearChat.addEventListener('click', () => {
+  if (ws) {
+    disconnect();
+  }
+  clearChatHistory();
+  clearTranscriptView();
+  setStatus('Disconnected', '');
+});
+
 const btnEye = document.getElementById('btn-eye');
 btnEye.addEventListener('click', () => {
   const isPassword = apiKeyInput.type === 'password';
@@ -86,7 +216,7 @@ apiKeyInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('btn-key-save').click();
 });
 
-// ── Init: fetch server settings ──────────────────────────────────────
+// -- Init: fetch server settings --------------------------------------
 async function initSettings() {
   let serverHasKey = false;
   try {
@@ -105,23 +235,22 @@ async function initSettings() {
   // Set context-aware modal description
   const desc = document.getElementById('modal-desc');
   if (serverHasKey) {
-    desc.textContent = 'The server has a configured API key. You can optionally override it with your own OpenAI key — it will be saved in your browser\'s local storage. Remove it to fall back to the server key.';
+    desc.textContent = 'The server has a configured API key. You can optionally override it with your own OpenAI key - it will be saved in your browser\'s local storage. Remove it to fall back to the server key.';
   } else {
-    desc.textContent = 'This server has no configured API key. Enter your own OpenAI API key — it will be saved in your browser\'s local storage and sent to the server only when connecting.';
+    desc.textContent = 'This server has no configured API key. Enter your own OpenAI API key - it will be saved in your browser\'s local storage and sent to the server only when connecting.';
   }
 
   // Auto-open modal only when key is strictly required and missing
   if (requiresApiKey && !getSavedKey()) openModal();
 }
 
+restoreChatHistory();
 initSettings();
 
 function setStatus(text, state) {
   statusText.textContent = text;
   statusDot.className = 'status-dot ' + (state || '');
 }
-
-const emptyState = document.getElementById('empty-state');
 
 function addBubble(role, text) {
   if (emptyState) emptyState.style.display = 'none';
@@ -175,6 +304,7 @@ function sendTextMessage() {
 
   // Show immediately in transcript
   addBubble('user', text);
+  appendToHistory('user', text);
   textInput.value = '';
   textInput.style.height = 'auto';
 
@@ -233,6 +363,18 @@ async function connect() {
       type: 'session.update',
       session: { voice: voiceSelect.value },
     }));
+
+    const memoryContext = buildModelMemoryMessage();
+    if (memoryContext) {
+      ws.send(JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text: memoryContext }],
+        },
+      }));
+    }
   };
 
   ws.onmessage = ({ data }) => {
@@ -277,26 +419,34 @@ function handleEvent(event) {
   switch (event.type) {
     case 'session.created':
     case 'session.updated':
-      setStatus('Connected — speak now', 'connected');
+      setStatus('Connected - speak now', 'connected');
       break;
 
     case 'input_audio_buffer.speech_started':
       setStatus('Listening...', 'listening');
       // Create placeholder user bubble immediately so it appears before AI response
-      pendingUserBubble = addBubble('user pending', '…');
+      pendingUserBubble = addBubble('user pending', '...');
       currentAiBubble = null;
       nextPlayTime = 0;
       break;
 
-    case 'conversation.item.input_audio_transcription.completed':
+    case 'conversation.item.input_audio_transcription.completed': {
+      const transcriptText = (event.transcript || '').trim();
       if (pendingUserBubble) {
-        pendingUserBubble._content.textContent = event.transcript || '';
-        pendingUserBubble.classList.remove('pending');
+        if (transcriptText) {
+          pendingUserBubble._content.textContent = transcriptText;
+          pendingUserBubble.classList.remove('pending');
+          appendToHistory('user', transcriptText);
+        } else {
+          pendingUserBubble.remove();
+        }
         pendingUserBubble = null;
-      } else if (event.transcript) {
-        addBubble('user', event.transcript);
+      } else if (transcriptText) {
+        addBubble('user', transcriptText);
+        appendToHistory('user', transcriptText);
       }
       break;
+    }
 
     case 'response.audio.delta':
       if (event.delta) {
@@ -315,15 +465,20 @@ function handleEvent(event) {
       }
       break;
 
-    case 'response.audio_transcript.done':
+    case 'response.audio_transcript.done': {
       if (currentAiBubble) {
+        const finalText = (currentAiBubble._content.textContent || '').trim();
+        if (finalText) {
+          appendToHistory('assistant', finalText);
+        }
         currentAiBubble.classList.remove('streaming');
         currentAiBubble = null;
       }
       break;
+    }
 
     case 'response.done':
-      setStatus('Connected — speak now', 'connected');
+      setStatus('Connected - speak now', 'connected');
       break;
 
     case 'error':
@@ -347,7 +502,7 @@ function disconnect() {
     audioContext = null;
   }
   if (micStream) {
-    micStream.getTracks().forEach(t => t.stop());
+    micStream.getTracks().forEach((t) => t.stop());
     micStream = null;
   }
   nextPlayTime = 0;
@@ -392,10 +547,10 @@ textInput.addEventListener('input', () => {
 btnMute.addEventListener('click', () => {
   if (!micStream) return;
   isMuted = !isMuted;
-  micStream.getAudioTracks().forEach(t => (t.enabled = !isMuted));
+  micStream.getAudioTracks().forEach((t) => (t.enabled = !isMuted));
   document.getElementById('icon-mic').style.display = isMuted ? 'none' : '';
   document.getElementById('icon-mic-off').style.display = isMuted ? '' : 'none';
   btnMute.childNodes[btnMute.childNodes.length - 1].textContent = isMuted ? ' Unmute' : ' Mute';
   btnMute.classList.toggle('active', isMuted);
-  setStatus(isMuted ? 'Muted' : 'Connected — speak now', isMuted ? 'muted' : 'connected');
+  setStatus(isMuted ? 'Muted' : 'Connected - speak now', isMuted ? 'muted' : 'connected');
 });
