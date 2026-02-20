@@ -1,6 +1,44 @@
 import { STATUS_STATE, STATUS_TEXT, UI_TEXT } from '../constants.js';
 
 /**
+ * Normalizes provider usage payload to a stable UI/storage shape.
+ */
+function extractUsage(event) {
+  const raw = event?.response?.usage;
+  if (!raw || typeof raw !== 'object') {
+    return undefined;
+  }
+
+  const toInt = (value) => {
+    if (!Number.isFinite(value)) {
+      return undefined;
+    }
+    const normalized = Math.max(0, Math.floor(value));
+    return Number.isInteger(normalized) ? normalized : undefined;
+  };
+
+  const inputTokens = toInt(raw.input_tokens ?? raw.prompt_tokens);
+  const outputTokens = toInt(raw.output_tokens ?? raw.completion_tokens);
+  const totalTokens = toInt(raw.total_tokens ?? (typeof inputTokens === 'number' && typeof outputTokens === 'number'
+    ? inputTokens + outputTokens
+    : undefined));
+
+  if (
+    typeof inputTokens !== 'number' &&
+    typeof outputTokens !== 'number' &&
+    typeof totalTokens !== 'number'
+  ) {
+    return undefined;
+  }
+
+  return {
+    ...(typeof inputTokens === 'number' ? { inputTokens } : {}),
+    ...(typeof outputTokens === 'number' ? { outputTokens } : {}),
+    ...(typeof totalTokens === 'number' ? { totalTokens } : {}),
+  };
+}
+
+/**
  * Creates OpenAI realtime event handler with injected UI/storage dependencies.
  */
 export function createEventRouter(deps) {
@@ -89,11 +127,17 @@ export function createEventRouter(deps) {
       }
 
       case 'response.audio_transcript.done': {
-        finalizeCurrentAssistantBubble(false);
+        const currentAiBubble = getCurrentAiBubble();
+        if (currentAiBubble) {
+          currentAiBubble.classList.remove('streaming');
+        }
         break;
       }
 
       case 'response.done':
+        if (getCurrentAiBubble()) {
+          getCurrentAiBubble()._usage = extractUsage(event);
+        }
         finalizeCurrentAssistantBubble(false);
         setAssistantResponding(false);
         setStatus(STATUS_TEXT.connected, STATUS_STATE.connected);

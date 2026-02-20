@@ -1,6 +1,25 @@
 import { HISTORY_LIMITS, STORAGE_KEYS } from '../constants.js';
 
 /**
+ * Validates optional per-turn token usage metadata.
+ */
+function isUsageValid(usage) {
+  if (typeof usage === 'undefined') {
+    return true;
+  }
+  if (!usage || typeof usage !== 'object') {
+    return false;
+  }
+
+  const isNonNegativeInteger = (value) => Number.isInteger(value) && value >= 0;
+  return (
+    (typeof usage.inputTokens === 'undefined' || isNonNegativeInteger(usage.inputTokens)) &&
+    (typeof usage.outputTokens === 'undefined' || isNonNegativeInteger(usage.outputTokens)) &&
+    (typeof usage.totalTokens === 'undefined' || isNonNegativeInteger(usage.totalTokens))
+  );
+}
+
+/**
  * Checks whether a parsed storage item matches expected chat message shape.
  */
 function isHistoryItemValid(item) {
@@ -11,7 +30,8 @@ function isHistoryItemValid(item) {
     typeof item.createdAt === 'string' &&
     (typeof item.provider === 'string' || typeof item.provider === 'undefined') &&
     (typeof item.interrupted === 'boolean' || typeof item.interrupted === 'undefined') &&
-    (typeof item.inputType === 'string' || typeof item.inputType === 'undefined')
+    (typeof item.inputType === 'string' || typeof item.inputType === 'undefined') &&
+    isUsageValid(item.usage)
   );
 }
 
@@ -33,6 +53,13 @@ function normalizeHistory(raw) {
       provider: item.provider || 'unknown',
       interrupted: Boolean(item.interrupted),
       inputType: item.inputType || 'n/a',
+      usage: item.usage
+        ? {
+            ...(typeof item.usage.inputTokens === 'number' ? { inputTokens: item.usage.inputTokens } : {}),
+            ...(typeof item.usage.outputTokens === 'number' ? { outputTokens: item.usage.outputTokens } : {}),
+            ...(typeof item.usage.totalTokens === 'number' ? { totalTokens: item.usage.totalTokens } : {}),
+          }
+        : undefined,
     }));
 }
 
@@ -72,7 +99,8 @@ export function appendHistory(
   text,
   provider = 'unknown',
   interrupted = false,
-  inputType = 'n/a'
+  inputType = 'n/a',
+  usage = undefined
 ) {
   const normalizedText = (text || '').trim();
   if (!normalizedText) {
@@ -87,6 +115,7 @@ export function appendHistory(
     provider: (provider || 'unknown').toLowerCase(),
     interrupted: Boolean(interrupted),
     inputType: (inputType || 'n/a').toLowerCase(),
+    usage: isUsageValid(usage) ? usage : undefined,
   };
 
   return saveHistory([...history, entry]);

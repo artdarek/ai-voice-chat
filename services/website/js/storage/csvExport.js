@@ -14,7 +14,18 @@ export function downloadChatHistoryCsv(history) {
     return;
   }
 
-  const header = ['id', 'createdAt', 'provider', 'role', 'inputType', 'interrupted', 'text']
+  const header = [
+    'id',
+    'createdAt',
+    'provider',
+    'role',
+    'inputType',
+    'interrupted',
+    'inputTokens',
+    'outputTokens',
+    'totalTokens',
+    'text',
+  ]
     .map(escapeCsvField)
     .join(',');
 
@@ -26,6 +37,9 @@ export function downloadChatHistoryCsv(history) {
       item.role || '',
       item.inputType || 'n/a',
       String(Boolean(item.interrupted)),
+      item.usage?.inputTokens ?? '',
+      item.usage?.outputTokens ?? '',
+      item.usage?.totalTokens ?? '',
       item.text || '',
     ]
       .map(escapeCsvField)

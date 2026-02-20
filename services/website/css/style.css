@@ -315,6 +315,10 @@ main {
   line-height: 1;
 }
 
+.message-usage {
+  font-variant-numeric: tabular-nums;
+}
+
 .message.assistant .message-content {
   border-top-left-radius: 6px;
 }

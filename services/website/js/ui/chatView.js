@@ -16,9 +16,32 @@ export function createChatView(transcript, emptyState) {
   }
 
   /**
+   * Formats optional usage metadata into a compact token summary.
+   */
+  function formatUsage(usage) {
+    if (!usage || typeof usage !== 'object') {
+      return '';
+    }
+
+    const hasNumber = (value) => Number.isInteger(value) && value >= 0;
+    const parts = [];
+    if (hasNumber(usage.inputTokens)) {
+      parts.push(`in ${usage.inputTokens}`);
+    }
+    if (hasNumber(usage.outputTokens)) {
+      parts.push(`out ${usage.outputTokens}`);
+    }
+    if (hasNumber(usage.totalTokens)) {
+      parts.push(`total ${usage.totalTokens}`);
+    }
+
+    return parts.length ? parts.join(' · ') : '';
+  }
+
+  /**
    * Adds a single chat bubble to the transcript and returns its DOM node.
    */
-  function addBubble(role, text, createdAt) {
+  function addBubble(role, text, createdAt, usage) {
     if (emptyState) {
       emptyState.style.display = 'none';
     }
@@ -45,6 +68,14 @@ export function createChatView(transcript, emptyState) {
     const timeValue = formatTimestamp(createdAt);
     timeMeta.innerHTML = `<i class="bi bi-clock"></i><span>${timeValue}</span>`;
 
+    const usageValue = formatUsage(usage);
+    if (usageValue) {
+      const usageMeta = document.createElement('span');
+      usageMeta.className = 'message-usage';
+      usageMeta.textContent = usageValue;
+      timeMeta.appendChild(usageMeta);
+    }
+
     msg.appendChild(avatar);
     body.appendChild(content);
     body.appendChild(timeMeta);
@@ -68,7 +99,7 @@ export function createChatView(transcript, emptyState) {
       return;
     }
 
-    history.forEach((item) => addBubble(item.role, item.text, item.createdAt));
+    history.forEach((item) => addBubble(item.role, item.text, item.createdAt, item.usage));
     transcript.scrollTop = transcript.scrollHeight;
   }
 

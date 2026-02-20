@@ -71,15 +71,39 @@ function appendUserMessage(text, inputType = 'text') {
 /**
  * Persists one assistant message to local chat history.
  */
-function appendAssistantMessage(text, interrupted = false) {
+function appendAssistantMessage(text, interrupted = false, usage = undefined) {
   chatHistory = appendHistory(
     chatHistory,
     'assistant',
     text,
     activeSessionProvider || settingsModal.getSelectedProvider(),
     interrupted,
-    'n/a'
+    'n/a',
+    usage
   );
+}
+
+/**
+ * Formats optional usage metadata into a compact token summary.
+ */
+function formatUsage(usage) {
+  if (!usage || typeof usage !== 'object') {
+    return '';
+  }
+
+  const hasNumber = (value) => Number.isInteger(value) && value >= 0;
+  const parts = [];
+  if (hasNumber(usage.inputTokens)) {
+    parts.push(`in ${usage.inputTokens}`);
+  }
+  if (hasNumber(usage.outputTokens)) {
+    parts.push(`out ${usage.outputTokens}`);
+  }
+  if (hasNumber(usage.totalTokens)) {
+    parts.push(`total ${usage.totalTokens}`);
+  }
+
+  return parts.length ? parts.join(' · ') : '';
 }
 
 /**
@@ -98,7 +122,15 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
   }
 
   if (finalText) {
-    appendAssistantMessage(finalText, interrupted);
+    appendAssistantMessage(finalText, interrupted, bubble._usage);
+  }
+
+  const usageText = formatUsage(bubble._usage);
+  if (usageText && bubble._time && !bubble._time.querySelector('.message-usage')) {
+    const usageMeta = document.createElement('span');
+    usageMeta.className = 'message-usage';
+    usageMeta.textContent = usageText;
+    bubble._time.appendChild(usageMeta);
   }
 
   bubble.classList.remove('streaming');
