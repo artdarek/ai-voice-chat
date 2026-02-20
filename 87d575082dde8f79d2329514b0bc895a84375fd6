@@ -1,0 +1,33 @@
+services/website/js/storage/historyStore.js
+  23906ddd162ac25a 4-21,33-34,56-62,102-103,118
+services/website/js/main.js
+  23906ddd162ac25a 74,81-82,87-108,125-133
+services/website/js/realtime/eventRouter.js
+  23906ddd162ac25a 4-40,130-133,138-140
+services/website/js/storage/csvExport.js
+  23906ddd162ac25a 24-27,40-42
+services/website/js/ui/chatView.js
+  23906ddd162ac25a 19-40,44,71-77,102
+services/website/css/style.css
+  23906ddd162ac25a 318-321
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "87d575082dde8f79d2329514b0bc895a84375fd6",
+  "prompts": {
+    "23906ddd162ac25a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c7aaa-8f43-7c13-890c-e92b3f2995db",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 163,
+      "total_deletions": 9,
+      "accepted_lines": 155,
+      "overriden_lines": 0
+    }
+  }
+}
