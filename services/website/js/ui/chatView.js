@@ -21,10 +21,10 @@ export function createChatView(transcript, emptyState) {
    * Formats optional usage metadata into a compact token summary.
    */
   function formatUsageMarkup(usage, rawResponse) {
-    const breakdown = getUsageBreakdown(usage, rawResponse);
-    if (!breakdown) {
+    if ((!usage || typeof usage !== 'object') && (!rawResponse || typeof rawResponse !== 'object')) {
       return '';
     }
+    const breakdown = getUsageBreakdown(usage, rawResponse);
 
     return [
       `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>Usage:</span>`,
@@ -71,7 +71,7 @@ export function createChatView(transcript, emptyState) {
     timeMeta.className = 'message-time';
     const createdDate = createdAt ? new Date(createdAt) : new Date();
 
-    const usageMarkup = formatUsageMarkup(usage, rawResponse);
+    const usageMarkup = !isUser ? formatUsageMarkup(usage, rawResponse) : '';
     if (usageMarkup) {
       const usageMeta = document.createElement('span');
       usageMeta.className = 'message-usage';

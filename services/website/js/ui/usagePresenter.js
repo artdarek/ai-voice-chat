@@ -34,7 +34,13 @@ export function createUsagePresenter(elements, deps) {
 
   function attachUsageToBubble(bubble, usage, rawResponse, provider, model) {
     const usageMarkup = formatMessageUsageMarkup(usage, rawResponse, provider, model);
-    if (!usageMarkup || !bubble?._time || bubble._time.querySelector('.message-usage')) {
+    if (!usageMarkup || !bubble?._time) {
+      return;
+    }
+
+    const existingUsage = bubble._time.querySelector('.message-usage');
+    if (existingUsage) {
+      existingUsage.innerHTML = usageMarkup;
       return;
     }
 

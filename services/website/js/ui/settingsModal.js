@@ -50,6 +50,11 @@ export function createSettingsModal(elements, callbacks = {}) {
     return normalizeProvider(stored || providerSelect.value || serverSettings.default_provider);
   }
 
+  function getStoredProvider() {
+    const stored = localStorage.getItem(STORAGE_KEYS.llmProvider);
+    return stored ? normalizeProvider(stored) : '';
+  }
+
   function getSavedKey(provider = getSelectedProvider()) {
     const normalizedProvider = normalizeProvider(provider);
     const storageKey = PROVIDERS[normalizedProvider].keyStorageKey;
@@ -156,10 +161,13 @@ export function createSettingsModal(elements, callbacks = {}) {
     serverSettings.providers.azure.server_key = Boolean(payload.providers?.azure?.server_key);
     serverSettings.providers.gemini.server_key = Boolean(payload.providers?.gemini?.server_key);
 
-    const current = getSelectedProvider();
-    const nextProvider = serverSettings.supported_realtime_providers.includes(current)
-      ? current
-      : serverSettings.default_provider;
+    const storedProvider = getStoredProvider();
+    const defaultProvider = serverSettings.supported_realtime_providers.includes(serverSettings.default_provider)
+      ? serverSettings.default_provider
+      : serverSettings.supported_realtime_providers[0];
+    const nextProvider = storedProvider && serverSettings.supported_realtime_providers.includes(storedProvider)
+      ? storedProvider
+      : defaultProvider;
     setSelectedProvider(nextProvider);
 
     Array.from(providerSelect.options).forEach((option) => {
