@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   llmProvider: 'llm_provider',
+  realtimeModelSelections: 'realtime_model_selections_v1',
   openaiApiKey: 'openai_api_key',
   azureApiKey: 'azure_api_key',
   geminiApiKey: 'gemini_api_key',

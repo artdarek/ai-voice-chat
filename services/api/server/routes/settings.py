@@ -9,12 +9,15 @@ from config import (
     OPENAI_API_KEY,
     SUPPORTED_REALTIME_PROVIDERS,
 )
+from services.provider_catalog import load_provider_catalog
 
 router = APIRouter()
 
 
 @router.get("/settings")
 async def settings() -> JSONResponse:
+    provider_catalog = load_provider_catalog()
+
     return JSONResponse(
         {
             "default_provider": DEFAULT_LLM_PROVIDER,
@@ -24,6 +27,7 @@ async def settings() -> JSONResponse:
                 "azure": {"server_key": bool(AZURE_OPENAI_API_KEY)},
                 "gemini": {"server_key": bool(GEMINI_API_KEY)},
             },
+            "provider_catalog": provider_catalog,
             "chat_system_prompt": CHAT_SYSTEM_PROMPT,
         }
     )

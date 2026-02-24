@@ -15,6 +15,8 @@ services:
     build:
       context: ./services/api
       dockerfile: Dockerfile
+    volumes:
+      - ./config/providers.json:/app/config/providers.json:ro
     env_file:
       - .env
     restart: unless-stopped

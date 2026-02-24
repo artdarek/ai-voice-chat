@@ -7,6 +7,7 @@ import { createChatView } from './ui/chatView.js';
 import { createSettingsModal } from './ui/settingsModal.js';
 import {
   HISTORY_LIMITS,
+  PROVIDERS,
   STORAGE_KEYS,
   STATUS_STATE,
   STATUS_TEXT,
@@ -23,8 +24,28 @@ let currentAiBubble = null;
 let pendingUserBubble = null;
 let isAssistantResponding = false;
 let activeSessionProvider = null;
+let activeSessionModel = null;
 let activeInteractionId = null;
 let serverSystemPrompt = 'You are a friendly and polite assistant. Be warm, helpful, and concise in your responses.';
+let providerCatalog = { providers: {} };
+const FALLBACK_PROVIDER_CATALOG = {
+  providers: {
+    openai: {
+      label: 'OpenAI',
+      models: [
+        { id: 'gpt-realtime-mini-2025-12-15', label: 'gpt-realtime-mini-2025-12-15' },
+      ],
+      pricing: {},
+    },
+    azure: {
+      label: 'Azure OpenAI',
+      deployments: [
+        { name: 'gpt-realtime-mini', model: 'gpt-realtime-mini', label: 'gpt-realtime-mini' },
+      ],
+      pricing: {},
+    },
+  },
+};
 
 const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
@@ -34,7 +55,9 @@ const btnDownloadChat = document.getElementById('btn-download-chat');
 const btnClearChat = document.getElementById('btn-clear-chat');
 const btnSystemPrompt = document.getElementById('btn-system-prompt');
 const textInput = document.getElementById('text-input');
+const providerSelectModal = document.getElementById('provider-select');
 const providerSelectInline = document.getElementById('provider-select-inline');
+const modelSelectInline = document.getElementById('model-select-inline');
 const voiceSelect = document.getElementById('voice-select');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
@@ -61,6 +84,10 @@ const responseInfoAudioOut = document.getElementById('response-info-audio-out');
 const responseInfoTextOut = document.getElementById('response-info-text-out');
 const responseInfoAudioTotal = document.getElementById('response-info-audio-total');
 const responseInfoTextTotal = document.getElementById('response-info-text-total');
+const responseInfoCostInput = document.getElementById('response-info-cost-input');
+const responseInfoCostCachedInput = document.getElementById('response-info-cost-cached-input');
+const responseInfoCostOutput = document.getElementById('response-info-cost-output');
+const responseInfoCostTotal = document.getElementById('response-info-cost-total');
 const responseTabGeneral = document.getElementById('response-tab-general');
 const systemPromptBackdrop = document.getElementById('system-prompt-backdrop');
 const systemPromptClose = document.getElementById('system-prompt-close');
@@ -93,11 +120,14 @@ function createInteractionId() {
  * Persists one user message to local chat history.
  */
 function appendUserMessage(text, inputType = 'text', interactionId = undefined) {
+  const selectedProvider = activeSessionProvider || settingsModal.getSelectedProvider();
+  const selectedTarget = getSelectedRealtimeTarget(selectedProvider);
   const nextHistory = appendHistory(
     chatHistory,
     'user',
     text,
-    activeSessionProvider || settingsModal.getSelectedProvider(),
+    selectedProvider,
+    activeSessionModel || selectedTarget.resolvedModel,
     false,
     inputType,
     undefined,
@@ -112,11 +142,14 @@ function appendUserMessage(text, inputType = 'text', interactionId = undefined) 
  * Persists one assistant message to local chat history.
  */
 function appendAssistantMessage(text, interrupted = false, usage = undefined, rawResponse = undefined, interactionId = undefined) {
+  const selectedProvider = activeSessionProvider || settingsModal.getSelectedProvider();
+  const selectedTarget = getSelectedRealtimeTarget(selectedProvider);
   const nextHistory = appendHistory(
     chatHistory,
     'assistant',
     text,
-    activeSessionProvider || settingsModal.getSelectedProvider(),
+    selectedProvider,
+    activeSessionModel || selectedTarget.resolvedModel,
     interrupted,
     'n/a',
     usage,
@@ -207,6 +240,198 @@ function getUsageBreakdown(usage, rawResponse) {
   };
 }
 
+function getProviderRuntimeConfig(provider) {
+  return providerCatalog?.providers?.[provider] || FALLBACK_PROVIDER_CATALOG.providers[provider] || {};
+}
+
+function getStoredRealtimeSelections() {
+  let parsed;
+  try {
+    parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.realtimeModelSelections) || '{}');
+  } catch {
+    parsed = {};
+  }
+  return parsed && typeof parsed === 'object' ? parsed : {};
+}
+
+function saveRealtimeSelection(provider, value) {
+  if (!provider || !value) {
+    return;
+  }
+  const next = { ...getStoredRealtimeSelections(), [provider]: value };
+  localStorage.setItem(STORAGE_KEYS.realtimeModelSelections, JSON.stringify(next));
+}
+
+function renderProviderOptions(supportedProviders = []) {
+  const catalogProviders = providerCatalog?.providers && typeof providerCatalog.providers === 'object'
+    ? providerCatalog.providers
+    : {};
+  const entries = Object.entries(catalogProviders)
+    .map(([id, cfg]) => ({
+      id: String(id || '').trim().toLowerCase(),
+      label: String(cfg?.label || id || '').trim(),
+    }))
+    .filter((item) => item.id && item.label && PROVIDERS[item.id]);
+
+  const fallbackEntries = [
+    { id: 'openai', label: 'OpenAI' },
+    { id: 'azure', label: 'Azure OpenAI' },
+  ].filter((item) => PROVIDERS[item.id]);
+
+  const available = entries.length ? entries : fallbackEntries;
+  if (!available.length) {
+    return;
+  }
+
+  const normalizedSupported = Array.isArray(supportedProviders)
+    ? supportedProviders.map((p) => String(p || '').toLowerCase())
+    : [];
+
+  const current = (settingsModal?.getSelectedProvider?.() || localStorage.getItem(STORAGE_KEYS.llmProvider) || '').toLowerCase();
+  const selected = available.some((item) => item.id === current) ? current : available[0].id;
+  const render = (selectEl) => {
+    if (!selectEl) {
+      return;
+    }
+    selectEl.innerHTML = available
+      .map((item) => `<option value="${item.id}">${item.label}</option>`)
+      .join('');
+    if (normalizedSupported.length) {
+      Array.from(selectEl.options).forEach((opt) => {
+        opt.disabled = !normalizedSupported.includes(opt.value);
+      });
+    }
+    selectEl.value = selected;
+  };
+
+  render(providerSelectInline);
+  render(providerSelectModal);
+}
+
+function renderModelOptions(provider) {
+  if (!modelSelectInline) {
+    return;
+  }
+  const normalizedProvider = (provider || 'openai').toLowerCase();
+  const runtimeConfig = getProviderRuntimeConfig(normalizedProvider);
+  const options = normalizedProvider === 'azure'
+    ? (runtimeConfig.deployments || []).map((item) => ({
+      value: String(item?.name || '').trim(),
+      label: String(item?.label || item?.name || '').trim(),
+      enabled: item?.enabled !== false,
+    }))
+    : (runtimeConfig.models || []).map((item) => ({
+      value: String(item?.id || '').trim(),
+      label: String(item?.label || item?.id || '').trim(),
+      enabled: item?.enabled !== false,
+    }));
+
+  const validOptions = options.filter((item) => item.value && item.label && item.enabled);
+  modelSelectInline.innerHTML = validOptions
+    .map((item) => `<option value="${item.value}">${item.label}</option>`)
+    .join('');
+
+  if (!validOptions.length) {
+    modelSelectInline.innerHTML = '<option value="">No models available</option>';
+    modelSelectInline.disabled = true;
+    return;
+  }
+
+  const saved = getStoredRealtimeSelections()[normalizedProvider];
+  const fallback = validOptions[0].value;
+  const selected = validOptions.some((item) => item.value === saved) ? saved : fallback;
+  modelSelectInline.disabled = false;
+  modelSelectInline.value = selected;
+  saveRealtimeSelection(normalizedProvider, selected);
+}
+
+function getSelectedRealtimeTarget(provider = settingsModal.getSelectedProvider()) {
+  const normalizedProvider = (provider || 'openai').toLowerCase();
+  const selectedValue = (modelSelectInline?.value || '').trim();
+  const runtimeConfig = getProviderRuntimeConfig(normalizedProvider);
+
+  if (normalizedProvider === 'azure') {
+    const deployment = (runtimeConfig.deployments || []).find((item) => item.name === selectedValue);
+    const deploymentName = deployment?.name || selectedValue || '';
+    const resolvedModel = deployment?.model || deploymentName || 'unknown';
+    return {
+      provider: 'azure',
+      model: undefined,
+      deployment: deploymentName || undefined,
+      resolvedModel,
+    };
+  }
+
+  const model = (runtimeConfig.models || []).find((item) => item.id === selectedValue);
+  const modelId = model?.id || selectedValue || '';
+  return {
+    provider: 'openai',
+    model: modelId || undefined,
+    deployment: undefined,
+    resolvedModel: modelId || 'unknown',
+  };
+}
+
+function parseRate(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return 0;
+  }
+  return numeric;
+}
+
+function getModelPricing(provider, model) {
+  const pricing = getProviderRuntimeConfig(provider)?.pricing || {};
+  const modelPricing = model ? pricing[model] : undefined;
+  if (!modelPricing || typeof modelPricing !== 'object') {
+    return null;
+  }
+
+  return {
+    inputTextPer1m: parseRate(modelPricing?.input?.text),
+    inputAudioPer1m: parseRate(modelPricing?.input?.audio),
+    cachedInputTextPer1m: parseRate(modelPricing?.cached_input?.text),
+    cachedInputAudioPer1m: parseRate(modelPricing?.cached_input?.audio),
+    outputTextPer1m: parseRate(modelPricing?.output?.text),
+    outputAudioPer1m: parseRate(modelPricing?.output?.audio),
+  };
+}
+
+function estimateCostFromUsageBreakdown(usageBreakdown, provider, model) {
+  const pricing = getModelPricing(provider, model);
+  if (!pricing) {
+    return null;
+  }
+
+  const inputCost = (
+    (usageBreakdown.inputTextNonCachedTokens / 1_000_000) * pricing.inputTextPer1m +
+    (usageBreakdown.inputAudioNonCachedTokens / 1_000_000) * pricing.inputAudioPer1m
+  );
+  const cachedInputCost = (
+    (usageBreakdown.inputTextCachedTokens / 1_000_000) * pricing.cachedInputTextPer1m +
+    (usageBreakdown.inputAudioCachedTokens / 1_000_000) * pricing.cachedInputAudioPer1m
+  );
+  const outputCost = (
+    (usageBreakdown.outputTextTokens / 1_000_000) * pricing.outputTextPer1m +
+    (usageBreakdown.outputAudioTokens / 1_000_000) * pricing.outputAudioPer1m
+  );
+  const totalCost = inputCost + cachedInputCost + outputCost;
+
+  return {
+    inputCost,
+    cachedInputCost,
+    outputCost,
+    totalCost,
+  };
+}
+
+function formatUsd(value) {
+  if (!Number.isFinite(value)) {
+    return '-';
+  }
+  return `$${value.toFixed(6)}`;
+}
+
 /**
  * Updates conversation-level token totals shown above message input.
  */
@@ -218,6 +443,7 @@ function updateUsageSummary() {
   const totals = chatHistory.reduce(
     (acc, item) => {
       const usage = getUsageBreakdown(item?.usage, item?.rawResponse);
+      const usageCost = estimateCostFromUsageBreakdown(usage, item?.provider, item?.model);
       acc.inputTextTokens += usage.inputTextTokens;
       acc.inputAudioTokens += usage.inputAudioTokens;
       acc.inputTextNonCachedTokens += usage.inputTextNonCachedTokens;
@@ -229,6 +455,7 @@ function updateUsageSummary() {
       acc.inputTokens += usage.inputTokens;
       acc.outputTokens += usage.outputTokens;
       acc.totalTokens += usage.totalTokens;
+      acc.totalCost += usageCost?.totalCost || 0;
       return acc;
     },
     {
@@ -243,6 +470,7 @@ function updateUsageSummary() {
       inputTokens: 0,
       outputTokens: 0,
       totalTokens: 0,
+      totalCost: 0,
     }
   );
 
@@ -251,6 +479,8 @@ function updateUsageSummary() {
     `<i class="bi bi-volume-up-fill usage-summary-icon" aria-hidden="true"></i><span>in: ${totals.inputAudioNonCachedTokens}/${totals.inputAudioCachedTokens} out: ${totals.outputAudioTokens}</span>`,
     `<span>·</span>`,
     `<i class="bi bi-chat-text-fill usage-summary-icon" aria-hidden="true"></i><span>in: ${totals.inputTextNonCachedTokens}/${totals.inputTextCachedTokens} out: ${totals.outputTextTokens}</span>`,
+    `<span>·</span>`,
+    `<i class="bi bi-cash-coin usage-summary-icon" aria-hidden="true"></i><span>${formatUsd(totals.totalCost)}</span>`,
   ].join(' ');
 
   if (usageSummaryInteractions) {
@@ -265,17 +495,19 @@ function updateUsageSummary() {
 /**
  * Formats optional usage metadata into a compact token summary.
  */
-function formatUsageMarkup(usage, rawResponse) {
+function formatUsageMarkup(usage, rawResponse, provider, model) {
   if ((!usage || typeof usage !== 'object') && (!rawResponse || typeof rawResponse !== 'object')) {
     return '';
   }
 
   const totals = getUsageBreakdown(usage, rawResponse);
+  const usageCost = estimateCostFromUsageBreakdown(totals, provider, model);
   return [
     `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>Usage:</span>`,
     `<i class="bi bi-volume-up-fill message-usage-icon" aria-hidden="true"></i><span>in: ${totals.inputAudioNonCachedTokens}/${totals.inputAudioCachedTokens} out: ${totals.outputAudioTokens}</span>`,
     `<span>·</span>`,
     `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>in: ${totals.inputTextNonCachedTokens}/${totals.inputTextCachedTokens} out: ${totals.outputTextTokens}</span>`,
+    usageCost ? `<span>·</span><i class="bi bi-cash-coin message-usage-icon" aria-hidden="true"></i><span>${formatUsd(usageCost.totalCost)}</span>` : '',
   ].join(' ');
 }
 
@@ -297,10 +529,12 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
   if (finalText) {
     const assistantEntry = appendAssistantMessage(finalText, interrupted, bubble._usage, bubble._rawResponse, bubble._interactionId);
     bubble._historyId = assistantEntry?.id;
+    bubble._provider = assistantEntry?.provider || bubble._provider;
+    bubble._model = assistantEntry?.model || bubble._model;
     activeInteractionId = null;
   }
 
-  const usageMarkup = formatUsageMarkup(bubble._usage, bubble._rawResponse);
+  const usageMarkup = formatUsageMarkup(bubble._usage, bubble._rawResponse, bubble._provider, bubble._model);
   if (usageMarkup && bubble._time && !bubble._time.querySelector('.message-usage')) {
     const usageMeta = document.createElement('span');
     usageMeta.className = 'message-usage';
@@ -325,6 +559,10 @@ function setConnectedUi() {
   btnConnect.classList.add('disconnect');
   btnConnect.disabled = false;
   btnMute.style.display = 'inline-flex';
+  providerSelectInline.disabled = false;
+  if (modelSelectInline) {
+    modelSelectInline.disabled = !modelSelectInline.options.length;
+  }
   voiceSelect.disabled = false;
   textInput.disabled = false;
   textInput.placeholder = UI_TEXT.inputPlaceholderConnected;
@@ -342,6 +580,9 @@ function setDisconnectedUi() {
   btnConnect.disabled = false;
   btnMute.style.display = 'none';
   providerSelectInline.disabled = false;
+  if (modelSelectInline) {
+    modelSelectInline.disabled = !modelSelectInline.options.length;
+  }
   voiceSelect.disabled = false;
   textInput.disabled = true;
   textInput.placeholder = UI_TEXT.inputPlaceholderDisconnected;
@@ -349,6 +590,7 @@ function setDisconnectedUi() {
   finalizeCurrentAssistantBubble(true);
   isAssistantResponding = false;
   activeSessionProvider = null;
+  activeSessionModel = null;
   pendingUserBubble = null;
   activeInteractionId = null;
 }
@@ -407,7 +649,8 @@ const settingsModal = createSettingsModal(
         disconnect();
       }
     },
-    onProviderChanged: () => {
+    onProviderChanged: (provider) => {
+      renderModelOptions(provider);
       if (ws) {
         disconnect();
         connect();
@@ -441,6 +684,8 @@ const eventRouter = createEventRouter({
     isAssistantResponding = active;
   },
   getAssistantResponding: () => isAssistantResponding,
+  getActiveProvider: () => activeSessionProvider || settingsModal.getSelectedProvider(),
+  getActiveModel: () => activeSessionModel || getSelectedRealtimeTarget().resolvedModel,
   finalizeCurrentAssistantBubble,
   requestResponseCancel: () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -463,7 +708,11 @@ async function initSettings() {
   }
 
   btnSettings.style.display = 'flex';
+  providerCatalog = payload?.provider_catalog || FALLBACK_PROVIDER_CATALOG;
+  renderProviderOptions(payload?.supported_realtime_providers || []);
   settingsModal.setServerSettings(payload || undefined);
+  renderModelOptions(settingsModal.getSelectedProvider());
+  updateUsageSummary();
   serverSystemPrompt = payload?.chat_system_prompt || serverSystemPrompt;
 
   const provider = settingsModal.getSelectedProvider();
@@ -559,6 +808,8 @@ function openResponseInfoModal(messageNode) {
   const sourceEntry = historyContext?.assistant;
   const sourceUsage = sourceEntry?.usage ?? messageNode._usage;
   const sourceRawResponse = sourceEntry?.rawResponse ?? messageNode._rawResponse;
+  const sourceProvider = sourceEntry?.provider ?? messageNode._provider;
+  const sourceModel = sourceEntry?.model ?? messageNode._model;
   const sourceUserText = historyContext?.userText ?? findPreviousUserMessageText(messageNode);
   const createdAtIso = sourceEntry?.createdAt ?? messageNode._createdAt;
   const createdAt = createdAtIso ? new Date(createdAtIso) : new Date();
@@ -579,6 +830,15 @@ function openResponseInfoModal(messageNode) {
   responseInfoTextOut.textContent = usageDetails.textOut;
   responseInfoAudioTotal.textContent = usageDetails.audioTotal;
   responseInfoTextTotal.textContent = usageDetails.textTotal;
+  const usageCost = estimateCostFromUsageBreakdown(
+    getUsageBreakdown(sourceUsage, sourceRawResponse),
+    sourceProvider,
+    sourceModel
+  );
+  responseInfoCostInput.textContent = usageCost ? formatUsd(usageCost.inputCost) : '-';
+  responseInfoCostCachedInput.textContent = usageCost ? formatUsd(usageCost.cachedInputCost) : '-';
+  responseInfoCostOutput.textContent = usageCost ? formatUsd(usageCost.outputCost) : '-';
+  responseInfoCostTotal.textContent = usageCost ? formatUsd(usageCost.totalCost) : '-';
   activateResponseGeneralTab();
   responseInfoBackdrop.style.display = 'flex';
 }
@@ -828,6 +1088,7 @@ function sendTextMessage() {
  */
 async function connect() {
   const provider = settingsModal.getSelectedProvider();
+  const target = getSelectedRealtimeTarget(provider);
   if (!settingsModal.isProviderSupported(provider)) {
     setStatus(`${provider} is not available in this version`, STATUS_STATE.error);
     settingsModal.openModal();
@@ -868,6 +1129,12 @@ async function connect() {
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
   const userKey = settingsModal.getSavedKey(provider);
   const wsParams = new URLSearchParams({ provider });
+  if (provider === 'azure' && target.deployment) {
+    wsParams.set('deployment', target.deployment);
+  }
+  if (provider === 'openai' && target.model) {
+    wsParams.set('model', target.model);
+  }
   if (userKey) {
     wsParams.set('api_key', userKey);
   }
@@ -877,6 +1144,8 @@ async function connect() {
 
   ws.onopen = () => {
     activeSessionProvider = provider;
+    activeSessionModel = target.resolvedModel || 'unknown';
+    saveRealtimeSelection(provider, provider === 'azure' ? target.deployment : target.model);
     ws.send(
       JSON.stringify({
         type: 'session.update',
@@ -1003,6 +1272,15 @@ systemPromptBackdrop.addEventListener('click', (e) => {
 });
 
 voiceSelect.addEventListener('change', () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    disconnect();
+    connect();
+  }
+});
+
+modelSelectInline?.addEventListener('change', () => {
+  const provider = settingsModal.getSelectedProvider();
+  saveRealtimeSelection(provider, modelSelectInline.value);
   if (ws && ws.readyState === WebSocket.OPEN) {
     disconnect();
     connect();

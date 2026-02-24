@@ -11,9 +11,16 @@ router = APIRouter()
 async def relay(websocket: WebSocket) -> None:
     provider = websocket.query_params.get("provider")
     user_api_key = websocket.query_params.get("api_key")
+    requested_model = websocket.query_params.get("model")
+    requested_deployment = websocket.query_params.get("deployment")
 
     try:
-        connection = resolve_provider_connection(provider, user_api_key)
+        connection = resolve_provider_connection(
+            provider,
+            user_api_key,
+            requested_model,
+            requested_deployment,
+        )
     except ProviderConfigError as exc:
         await websocket.close(code=4001, reason=str(exc))
         return

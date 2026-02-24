@@ -92,9 +92,14 @@
             <div class="provider-select-wrap d-flex align-items-center">
               <i class="bi bi-diagram-3-fill"></i>
               <select id="provider-select-inline" title="Model provider">
-                <option value="openai">OpenAI</option>
-                <option value="azure">Azure OpenAI</option>
-                <option value="gemini" disabled>Gemini (coming soon)</option>
+                <option value="">No providers available</option>
+              </select>
+            </div>
+
+            <div class="model-select-wrap d-flex align-items-center">
+              <i class="bi bi-cpu-fill"></i>
+              <select id="model-select-inline" title="Realtime model">
+                <option value="">No models available</option>
               </select>
             </div>
 
@@ -160,9 +165,7 @@
         <label for="provider-select">Provider</label>
         <div class="select-wrap">
           <select id="provider-select">
-            <option value="openai">OpenAI</option>
-            <option value="azure">Azure OpenAI</option>
-            <option value="gemini" disabled>Gemini (coming soon)</option>
+            <option value="">No providers available</option>
           </select>
         </div>
         <p class="provider-hint" id="provider-hint"></p>
@@ -292,6 +295,21 @@
                 <span>in: <strong id="response-info-text-in">-</strong></span>
                 <span>out: <strong id="response-info-text-out">-</strong></span>
                 <span>total: <strong id="response-info-text-total">-</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="app-modal-field">
+            <label>Cost breakdown</label>
+            <div class="response-token-breakdown">
+              <div class="response-token-row">
+                <span class="response-token-kind">input</span>
+                <span>regular: <strong id="response-info-cost-input">-</strong></span>
+                <span>cached: <strong id="response-info-cost-cached-input">-</strong></span>
+                <span>total: <strong id="response-info-cost-total">-</strong></span>
+              </div>
+              <div class="response-token-row">
+                <span class="response-token-kind">output</span>
+                <span>cost: <strong id="response-info-cost-output">-</strong></span>
               </div>
             </div>
           </div>

@@ -538,6 +538,7 @@ footer {
 #btn-mute .bi,
 #btn-connect .bi,
 .voice-select-wrap .bi,
+.model-select-wrap .bi,
 .app-modal-close .bi,
 .btn-eye .bi {
   font-size: 1rem;
@@ -556,6 +557,7 @@ footer {
 .selectors-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -578,6 +580,7 @@ footer {
 
 /* ── Voice selector ── */
 .voice-select-wrap,
+.model-select-wrap,
 .provider-select-wrap {
   display: flex;
   align-items: center;
@@ -594,6 +597,7 @@ footer {
 }
 
 .voice-select-wrap:hover,
+.model-select-wrap:hover,
 .provider-select-wrap:hover {
   background: #282828;
   border-color: #383838;
@@ -601,11 +605,13 @@ footer {
 }
 
 .voice-select-wrap .bi,
+.model-select-wrap .bi,
 .provider-select-wrap .bi {
   color: inherit;
 }
 
 #provider-select-inline,
+#model-select-inline,
 #voice-select {
   background: transparent;
   color: inherit;
@@ -621,11 +627,13 @@ footer {
 }
 
 #provider-select-inline option,
+#model-select-inline option,
 #voice-select option {
   background: var(--surface2);
 }
 
 #provider-select-inline:disabled,
+#model-select-inline:disabled,
 #voice-select:disabled {
   opacity: 0.35;
   cursor: not-allowed;

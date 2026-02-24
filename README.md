@@ -41,7 +41,8 @@ Browser ── GET /settings ──> nginx ──> FastAPI
 aichat/
 ├── config/
 │   ├── nginx.conf              # nginx: static files + /ws proxy
-│   └── .env.example            # environment variables template
+│   ├── .env.example            # environment variables template
+│   └── providers.json          # provider/model catalog + pricing (USD per 1M tokens)
 ├── docs/
 │   └── plans/
 │       ├── initial-poc.md
@@ -119,10 +120,10 @@ cp config/.env.example .env
 | `DEFAULT_LLM_PROVIDER` | Optional | Default provider for new users. Supported values: `openai`, `azure`. Default: `openai` |
 | `OPENAI_API_KEY` | Optional* | Server-side OpenAI API key (`sk-...`). Can be omitted if users supply their own key via the browser UI. |
 | `OPENAI_REALTIME_BASE_URL` | Optional | Base Realtime WebSocket URL. Default: `wss://api.openai.com/v1/realtime` |
-| `OPENAI_REALTIME_MODEL` | Optional | Realtime model name appended as `?model=...` to the base URL |
+| `OPENAI_REALTIME_MODEL` | Optional | Default OpenAI realtime model if user did not select one in UI. Must exist in `config/providers.json` when catalog is defined. |
 | `AZURE_OPENAI_API_KEY` | Optional* | Server-side Azure OpenAI key. Can be omitted if users supply their own key in browser UI. |
 | `AZURE_OPENAI_REALTIME_ENDPOINT` | Optional | Azure Realtime endpoint, e.g. `wss://<resource>.openai.azure.com/openai/realtime` |
-| `AZURE_OPENAI_REALTIME_DEPLOYMENT` | Optional | Azure Realtime deployment name |
+| `AZURE_OPENAI_REALTIME_DEPLOYMENT` | Optional | Default Azure realtime deployment if user did not select one in UI. Must exist in `config/providers.json` when catalog is defined. |
 | `AZURE_OPENAI_REALTIME_API_VERSION` | Optional | Azure Realtime API version. Default: `2025-04-01-preview` |
 | `AZURE_OPENAI_TRANSCRIPTION_MODEL` | Optional | Azure transcription model used in realtime session config. Defaults to `OPENAI_TRANSCRIPTION_MODEL` value. |
 | `GEMINI_API_KEY` | Optional | Reserved for future Gemini runtime support (not used by realtime relay yet) |
@@ -252,7 +253,7 @@ The gear icon (⚙) in the top-right corner is always visible and opens provider
 - The frontend calls `GET /settings` on load to check default provider, supported providers, and server key availability per provider
 - If selected provider has no available key (server/user), the modal opens automatically and Connect is blocked
 - Keys are stored in `localStorage` under provider-specific keys (`openai_api_key`, `azure_api_key`, `gemini_api_key`)
-- When connecting, provider and user key (if present) are passed as WebSocket query params (`?provider=...&api_key=...`)
+- When connecting, provider + selected realtime target + user key (if present) are passed as WebSocket query params (`?provider=...&model=...` for OpenAI, `?provider=...&deployment=...` for Azure, plus optional `api_key=...`)
 - Removing the active provider key immediately disconnects any active session
 
 ---
@@ -267,6 +268,9 @@ The gear icon (⚙) in the top-right corner is always visible and opens provider
 - **Voice selection** — choose from: `alloy`, `ash`, `ballad`, `cedar`, `coral`, `echo`, `marin`, `sage`, `shimmer`, `verse`
 - **Mute** — disables the microphone track without closing the WebSocket connection
 - **Provider selection** — switch between OpenAI and Azure OpenAI in settings (Gemini key storage is prepared for future runtime support)
+- **Realtime model/deployment selection** — choose provider-specific models directly under the message input
+- **Model availability toggle** — set `"enabled": true/false` per OpenAI model (`models[]`) and Azure deployment (`deployments[]`) in `config/providers.json`; disabled entries are hidden in UI and rejected by backend
+- **Token cost estimation** — cost per response and conversation summary calculated from usage + pricing in `config/providers.json` (input/output/cached, text/audio)
 - **API key management** — separate keys per provider; user key overrides server key; removing user key falls back to server key
 - **Chat memory persistence** — transcript is stored in browser `localStorage` and restored after refresh
 - **Reconnect memory replay** — on `Connect`, recent history is sent as compact context so the model can continue the conversation

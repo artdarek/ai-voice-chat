@@ -1,0 +1,96 @@
+{
+  "providers": {
+    "azure": {
+      "label": "Azure OpenAI",
+      "deployments": [
+        {
+          "name": "gpt-realtime-mini",
+          "model": "gpt-realtime-mini",
+          "label": "gpt-realtime-mini",
+          "enabled": true
+        },
+        {
+          "name": "gpt-realtime",
+          "model": "gpt-realtime",
+          "label": "gpt-realtime",
+          "enabled": false
+        }
+      ],
+      "pricing": {
+        "gpt-realtime-mini": {
+          "input": {
+            "text": 0.6,
+            "audio": 10.0
+          },
+          "cached_input": {
+            "text": 0.06,
+            "audio": 0.3
+          },
+          "output": {
+            "text": 2.4,
+            "audio": 20.0
+          }
+        },
+        "gpt-realtime": {
+          "input": {
+            "text": 4.0,
+            "audio": 32.0
+          },
+          "cached_input": {
+            "text": 0.4,
+            "audio": 0.4
+          },
+          "output": {
+            "text": 16.0,
+            "audio": 64.0
+          }
+        }
+      }
+    },
+    "openai": {
+      "label": "OpenAI",
+      "models": [
+        {
+          "id": "gpt-realtime-mini",
+          "label": "gpt-realtime-mini",
+          "enabled": true
+        },
+        {
+          "id": "gpt-realtime",
+          "label": "gpt-realtime",
+          "enabled": true
+        }
+      ],
+      "pricing": {
+        "gpt-realtime-mini": {
+          "input": {
+            "text": 0.6,
+            "audio": 10.0
+          },
+          "cached_input": {
+            "text": 0.06,
+            "audio": 0.3
+          },
+          "output": {
+            "text": 2.4,
+            "audio": 20.0
+          }
+        },
+        "gpt-realtime": {
+          "input": {
+            "text": 4.0,
+            "audio": 32.0
+          },
+          "cached_input": {
+            "text": 0.4,
+            "audio": 0.4
+          },
+          "output": {
+            "text": 16.0,
+            "audio": 64.0
+          }
+        }
+      }
+    }
+  }
+}

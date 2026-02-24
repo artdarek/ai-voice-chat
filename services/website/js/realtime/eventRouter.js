@@ -57,6 +57,8 @@ export function createEventRouter(deps) {
     getActiveInteractionId,
     setAssistantResponding,
     getAssistantResponding,
+    getActiveProvider,
+    getActiveModel,
     finalizeCurrentAssistantBubble,
     requestResponseCancel,
   } = deps;
@@ -129,6 +131,8 @@ export function createEventRouter(deps) {
         if (!currentAiBubble) {
           currentAiBubble = chatView.addBubble('assistant streaming', '');
           currentAiBubble._interactionId = getActiveInteractionId() || createInteractionId();
+          currentAiBubble._provider = typeof getActiveProvider === 'function' ? getActiveProvider() : 'unknown';
+          currentAiBubble._model = typeof getActiveModel === 'function' ? getActiveModel() : 'unknown';
           setCurrentAiBubble(currentAiBubble);
         }
 
