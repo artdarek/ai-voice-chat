@@ -24,16 +24,11 @@ export function createChatView(transcript, emptyState) {
       return '';
     }
 
-    const totalAudioTokens = breakdown.inputAudioTokens + breakdown.outputAudioTokens;
-    const totalTextTokens = breakdown.inputTextTokens + breakdown.outputTextTokens;
-
     return [
       `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>Usage:</span>`,
-      `<i class="bi bi-volume-up-fill message-usage-icon" aria-hidden="true"></i><span>${breakdown.inputAudioTokens}/${breakdown.outputAudioTokens} (${totalAudioTokens})</span>`,
+      `<i class="bi bi-volume-up-fill message-usage-icon" aria-hidden="true"></i><span>in: ${breakdown.inputAudioNonCachedTokens}/${breakdown.inputAudioCachedTokens} out: ${breakdown.outputAudioTokens}</span>`,
       `<span>·</span>`,
-      `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>${breakdown.inputTextTokens}/${breakdown.outputTextTokens} (${totalTextTokens})</span>`,
-      `<span>·</span>`,
-      `<i class="bi bi-calculator message-usage-icon" aria-hidden="true"></i><span>${breakdown.inputTokens}/${breakdown.outputTokens} (${breakdown.totalTokens})</span>`,
+      `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>in: ${breakdown.inputTextNonCachedTokens}/${breakdown.inputTextCachedTokens} out: ${breakdown.outputTextTokens}</span>`,
     ].join(' ');
   }
 
@@ -46,11 +41,14 @@ export function createChatView(transcript, emptyState) {
     const rawUsage = rawResponse?.response?.usage;
     const inputDetails = rawUsage?.input_token_details || rawUsage?.inputTokenDetails || {};
     const outputDetails = rawUsage?.output_token_details || rawUsage?.outputTokenDetails || {};
+    const cachedDetails = inputDetails.cached_tokens_details || inputDetails.cachedTokenDetails || {};
 
     let inputTextTokens = toInt(inputDetails.text_tokens ?? inputDetails.textTokens) || 0;
     let inputAudioTokens = toInt(inputDetails.audio_tokens ?? inputDetails.audioTokens) || 0;
     let outputTextTokens = toInt(outputDetails.text_tokens ?? outputDetails.textTokens) || 0;
     let outputAudioTokens = toInt(outputDetails.audio_tokens ?? outputDetails.audioTokens) || 0;
+    const inputAudioCachedTokens = toInt(cachedDetails.audio_tokens ?? cachedDetails.audioTokens) || 0;
+    const inputTextCachedTokens = toInt(cachedDetails.text_tokens ?? cachedDetails.textTokens) || 0;
 
     const usageInput = toInt(usage?.inputTokens);
     const usageOutput = toInt(usage?.outputTokens);
@@ -68,10 +66,16 @@ export function createChatView(transcript, emptyState) {
     if (outputTextTokens === 0 && outputAudioTokens === 0 && outputTokens > 0) {
       outputTextTokens = outputTokens;
     }
+    const normalizedAudioCached = Math.min(inputAudioCachedTokens, inputAudioTokens);
+    const normalizedTextCached = Math.min(inputTextCachedTokens, inputTextTokens);
 
     return {
       inputTextTokens,
       inputAudioTokens,
+      inputTextNonCachedTokens: Math.max(0, inputTextTokens - normalizedTextCached),
+      inputAudioNonCachedTokens: Math.max(0, inputAudioTokens - normalizedAudioCached),
+      inputTextCachedTokens: normalizedTextCached,
+      inputAudioCachedTokens: normalizedAudioCached,
       outputTextTokens,
       outputAudioTokens,
       inputTokens,

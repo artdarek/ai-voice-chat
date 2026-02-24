@@ -132,11 +132,14 @@ function getUsageBreakdown(usage, rawResponse) {
   const rawUsage = rawResponse?.response?.usage;
   const inputDetails = rawUsage?.input_token_details || rawUsage?.inputTokenDetails || {};
   const outputDetails = rawUsage?.output_token_details || rawUsage?.outputTokenDetails || {};
+  const cachedDetails = inputDetails.cached_tokens_details || inputDetails.cachedTokenDetails || {};
 
   let inputTextTokens = toInt(inputDetails.text_tokens ?? inputDetails.textTokens) || 0;
   let inputAudioTokens = toInt(inputDetails.audio_tokens ?? inputDetails.audioTokens) || 0;
   let outputTextTokens = toInt(outputDetails.text_tokens ?? outputDetails.textTokens) || 0;
   let outputAudioTokens = toInt(outputDetails.audio_tokens ?? outputDetails.audioTokens) || 0;
+  const inputAudioCachedTokens = toInt(cachedDetails.audio_tokens ?? cachedDetails.audioTokens) || 0;
+  const inputTextCachedTokens = toInt(cachedDetails.text_tokens ?? cachedDetails.textTokens) || 0;
 
   const usageInput = toInt(usage?.inputTokens);
   const usageOutput = toInt(usage?.outputTokens);
@@ -173,10 +176,16 @@ function getUsageBreakdown(usage, rawResponse) {
   if (outputTextTokens === 0 && outputAudioTokens === 0 && outputTokens > 0) {
     outputTextTokens = outputTokens;
   }
+  const normalizedAudioCached = Math.min(inputAudioCachedTokens, inputAudioTokens);
+  const normalizedTextCached = Math.min(inputTextCachedTokens, inputTextTokens);
 
   return {
     inputTextTokens,
     inputAudioTokens,
+    inputTextNonCachedTokens: Math.max(0, inputTextTokens - normalizedTextCached),
+    inputAudioNonCachedTokens: Math.max(0, inputAudioTokens - normalizedAudioCached),
+    inputTextCachedTokens: normalizedTextCached,
+    inputAudioCachedTokens: normalizedAudioCached,
     outputTextTokens,
     outputAudioTokens,
     inputTokens,
@@ -198,6 +207,10 @@ function updateUsageSummary() {
       const usage = getUsageBreakdown(item?.usage, item?.rawResponse);
       acc.inputTextTokens += usage.inputTextTokens;
       acc.inputAudioTokens += usage.inputAudioTokens;
+      acc.inputTextNonCachedTokens += usage.inputTextNonCachedTokens;
+      acc.inputAudioNonCachedTokens += usage.inputAudioNonCachedTokens;
+      acc.inputTextCachedTokens += usage.inputTextCachedTokens;
+      acc.inputAudioCachedTokens += usage.inputAudioCachedTokens;
       acc.outputTextTokens += usage.outputTextTokens;
       acc.outputAudioTokens += usage.outputAudioTokens;
       acc.inputTokens += usage.inputTokens;
@@ -208,6 +221,10 @@ function updateUsageSummary() {
     {
       inputTextTokens: 0,
       inputAudioTokens: 0,
+      inputTextNonCachedTokens: 0,
+      inputAudioNonCachedTokens: 0,
+      inputTextCachedTokens: 0,
+      inputAudioCachedTokens: 0,
       outputTextTokens: 0,
       outputAudioTokens: 0,
       inputTokens: 0,
@@ -216,15 +233,11 @@ function updateUsageSummary() {
     }
   );
 
-  const totalAudioTokens = totals.inputAudioTokens + totals.outputAudioTokens;
-  const totalTextTokens = totals.inputTextTokens + totals.outputTextTokens;
   usageSummaryText.innerHTML = [
     `<i class="bi bi-bar-chart-line usage-summary-icon" aria-hidden="true"></i><span>Usage:</span>`,
-    `<i class="bi bi-volume-up-fill usage-summary-icon" aria-hidden="true"></i><span>${totals.inputAudioTokens}/${totals.outputAudioTokens} (${totalAudioTokens})</span>`,
+    `<i class="bi bi-volume-up-fill usage-summary-icon" aria-hidden="true"></i><span>in: ${totals.inputAudioNonCachedTokens}/${totals.inputAudioCachedTokens} out: ${totals.outputAudioTokens}</span>`,
     `<span>·</span>`,
-    `<i class="bi bi-chat-text-fill usage-summary-icon" aria-hidden="true"></i><span>${totals.inputTextTokens}/${totals.outputTextTokens} (${totalTextTokens})</span>`,
-    `<span>·</span>`,
-    `<i class="bi bi-calculator usage-summary-icon" aria-hidden="true"></i><span>${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})</span>`,
+    `<i class="bi bi-chat-text-fill usage-summary-icon" aria-hidden="true"></i><span>in: ${totals.inputTextNonCachedTokens}/${totals.inputTextCachedTokens} out: ${totals.outputTextTokens}</span>`,
   ].join(' ');
 
   if (usageSummaryInteractions) {
@@ -245,15 +258,11 @@ function formatUsageMarkup(usage, rawResponse) {
   }
 
   const totals = getUsageBreakdown(usage, rawResponse);
-  const totalAudioTokens = totals.inputAudioTokens + totals.outputAudioTokens;
-  const totalTextTokens = totals.inputTextTokens + totals.outputTextTokens;
   return [
     `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>Usage:</span>`,
-    `<i class="bi bi-volume-up-fill message-usage-icon" aria-hidden="true"></i><span>${totals.inputAudioTokens}/${totals.outputAudioTokens} (${totalAudioTokens})</span>`,
+    `<i class="bi bi-volume-up-fill message-usage-icon" aria-hidden="true"></i><span>in: ${totals.inputAudioNonCachedTokens}/${totals.inputAudioCachedTokens} out: ${totals.outputAudioTokens}</span>`,
     `<span>·</span>`,
-    `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>${totals.inputTextTokens}/${totals.outputTextTokens} (${totalTextTokens})</span>`,
-    `<span>·</span>`,
-    `<i class="bi bi-calculator message-usage-icon" aria-hidden="true"></i><span>${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})</span>`,
+    `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>in: ${totals.inputTextNonCachedTokens}/${totals.inputTextCachedTokens} out: ${totals.outputTextTokens}</span>`,
   ].join(' ');
 }
 
