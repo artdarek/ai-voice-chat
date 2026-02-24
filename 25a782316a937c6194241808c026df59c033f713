@@ -1,0 +1,38 @@
+services/website/css/style.css
+  b04e61d66c7d3335 667,689
+services/website/js/ui/connectionPanel.js
+  d2a89b07c6c0d758 49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "25a782316a937c6194241808c026df59c033f713",
+  "prompts": {
+    "b04e61d66c7d3335": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aa87f010-6b31-462d-bf89-73fb7d96d368",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 4,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "d2a89b07c6c0d758": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f50f9cf5-31ba-4473-826e-31ad854488cb",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 2,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
