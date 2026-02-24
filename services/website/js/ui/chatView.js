@@ -67,13 +67,24 @@ export function createChatView(transcript, emptyState) {
     timeMeta.className = 'message-time';
     const timeValue = formatTimestamp(createdAt);
     timeMeta.innerHTML = `<i class="bi bi-clock"></i><span>${timeValue}</span>`;
+    const createdDate = createdAt ? new Date(createdAt) : new Date();
 
     const usageValue = formatUsage(usage);
     if (usageValue) {
       const usageMeta = document.createElement('span');
       usageMeta.className = 'message-usage';
-      usageMeta.textContent = usageValue;
+      usageMeta.innerHTML = `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>${usageValue}</span>`;
       timeMeta.appendChild(usageMeta);
+    }
+
+    if (!isUser) {
+      const infoButton = document.createElement('button');
+      infoButton.className = 'message-info-btn';
+      infoButton.type = 'button';
+      infoButton.setAttribute('aria-label', 'Response details');
+      infoButton.title = 'Response details';
+      infoButton.innerHTML = '<i class="bi bi-info-circle"></i>';
+      timeMeta.appendChild(infoButton);
     }
 
     msg.appendChild(avatar);
@@ -85,6 +96,8 @@ export function createChatView(transcript, emptyState) {
 
     msg._content = content;
     msg._time = timeMeta;
+    msg._usage = usage;
+    msg._createdAt = Number.isNaN(createdDate.getTime()) ? new Date().toISOString() : createdDate.toISOString();
     return msg;
   }
 

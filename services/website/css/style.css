@@ -316,7 +316,38 @@ main {
 }
 
 .message-usage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-variant-numeric: tabular-nums;
+}
+
+.message-usage-icon {
+  font-size: 0.62rem;
+  opacity: 0.9;
+}
+
+.message-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  background: transparent;
+  border: none;
+  color: #7b7b8a;
+  cursor: pointer;
+  padding: 0;
+}
+
+.message-info-btn:hover {
+  color: #a2a2b6;
+}
+
+.message-info-btn .bi {
+  font-size: 0.72rem;
+  line-height: 1;
 }
 
 .message.assistant .message-content {
@@ -767,6 +798,17 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .provider-hint {
   font-size: 0.77rem;
   color: var(--text-dim);
+}
+
+.response-info-value {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.response-info-user {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .system-prompt-textarea {

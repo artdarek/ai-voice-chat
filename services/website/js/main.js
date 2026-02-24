@@ -45,6 +45,11 @@ const clearConfirmBackdrop = document.getElementById('clear-confirm-backdrop');
 const clearConfirmClose = document.getElementById('clear-confirm-close');
 const btnClearCancel = document.getElementById('btn-clear-cancel');
 const btnClearConfirm = document.getElementById('btn-clear-confirm');
+const responseInfoBackdrop = document.getElementById('response-info-backdrop');
+const responseInfoClose = document.getElementById('response-info-close');
+const responseInfoUsage = document.getElementById('response-info-usage');
+const responseInfoDate = document.getElementById('response-info-date');
+const responseInfoUser = document.getElementById('response-info-user');
 const systemPromptBackdrop = document.getElementById('system-prompt-backdrop');
 const systemPromptClose = document.getElementById('system-prompt-close');
 const btnSystemPromptCancel = document.getElementById('btn-system-prompt-cancel');
@@ -193,8 +198,13 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
   if (usageText && bubble._time && !bubble._time.querySelector('.message-usage')) {
     const usageMeta = document.createElement('span');
     usageMeta.className = 'message-usage';
-    usageMeta.textContent = usageText;
-    bubble._time.appendChild(usageMeta);
+    usageMeta.innerHTML = `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>${usageText}</span>`;
+    const infoButton = bubble._time.querySelector('.message-info-btn');
+    if (infoButton) {
+      bubble._time.insertBefore(usageMeta, infoButton);
+    } else {
+      bubble._time.appendChild(usageMeta);
+    }
   }
 
   bubble.classList.remove('streaming');
@@ -382,6 +392,36 @@ function openClearConfirmModal() {
  */
 function closeClearConfirmModal() {
   clearConfirmBackdrop.style.display = 'none';
+}
+
+function findPreviousUserMessageText(messageNode) {
+  let cursor = messageNode?.previousElementSibling || null;
+  while (cursor) {
+    if (cursor.classList?.contains('message') && cursor.classList?.contains('user')) {
+      const content = cursor.querySelector('.message-content');
+      return (content?.textContent || '').trim() || '-';
+    }
+    cursor = cursor.previousElementSibling;
+  }
+  return '-';
+}
+
+function openResponseInfoModal(messageNode) {
+  if (!messageNode) {
+    return;
+  }
+
+  const createdAtIso = messageNode._createdAt;
+  const createdAt = createdAtIso ? new Date(createdAtIso) : new Date();
+  const hasValidDate = !Number.isNaN(createdAt.getTime());
+  responseInfoDate.textContent = hasValidDate ? createdAt.toLocaleString() : '-';
+  responseInfoUsage.textContent = formatUsage(messageNode._usage) || '-';
+  responseInfoUser.textContent = findPreviousUserMessageText(messageNode);
+  responseInfoBackdrop.style.display = 'flex';
+}
+
+function closeResponseInfoModal() {
+  responseInfoBackdrop.style.display = 'none';
 }
 
 function getSavedSystemPrompt() {
@@ -603,6 +643,22 @@ clearConfirmBackdrop.addEventListener('click', (e) => {
   }
 });
 
+transcript.addEventListener('click', (e) => {
+  const infoButton = e.target.closest('.message-info-btn');
+  if (!infoButton) {
+    return;
+  }
+  const messageNode = infoButton.closest('.message');
+  openResponseInfoModal(messageNode);
+});
+
+responseInfoClose.addEventListener('click', closeResponseInfoModal);
+responseInfoBackdrop.addEventListener('click', (e) => {
+  if (e.target === responseInfoBackdrop) {
+    closeResponseInfoModal();
+  }
+});
+
 btnSystemPrompt.addEventListener('click', openSystemPromptModal);
 systemPromptClose.addEventListener('click', closeSystemPromptModal);
 btnSystemPromptReset.addEventListener('click', resetSystemPromptDraft);
@@ -650,6 +706,9 @@ textInput.addEventListener('input', () => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && clearConfirmBackdrop.style.display !== 'none') {
     closeClearConfirmModal();
+  }
+  if (e.key === 'Escape' && responseInfoBackdrop.style.display !== 'none') {
+    closeResponseInfoModal();
   }
   if (e.key === 'Escape' && systemPromptBackdrop.style.display !== 'none') {
     closeSystemPromptModal();
