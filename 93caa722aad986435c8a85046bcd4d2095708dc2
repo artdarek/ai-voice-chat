@@ -1,0 +1,27 @@
+services/website/index.html
+  92b29ccd3c52e447 360-363
+config/providers.json
+  92b29ccd3c52e447 61
+services/website/js/main.js
+  92b29ccd3c52e447 80,149,172,838,848-850,1273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "93caa722aad986435c8a85046bcd4d2095708dc2",
+  "prompts": {
+    "92b29ccd3c52e447": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c908c-293d-7f63-8a15-7d602dcc0dee",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 46,
+      "total_deletions": 35,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    }
+  }
+}
