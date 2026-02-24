@@ -1,0 +1,25 @@
+services/website/js/ui/chatView.js
+  6688734b6a1607e5 21,27-29,31-37,120-121,124
+services/website/js/main.js
+  6688734b6a1607e5 219-228,242,248-249,251-257,279-280,283,573-580,588-604,607,610
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "b2817f1ccb1f2d066be9d8494cec7b4c628618ea",
+  "prompts": {
+    "6688734b6a1607e5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c8eaa-e817-73d3-bfdc-cdbc89824ad0",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 78,
+      "total_deletions": 34,
+      "accepted_lines": 65,
+      "overriden_lines": 0
+    }
+  }
+}
