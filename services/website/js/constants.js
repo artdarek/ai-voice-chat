@@ -4,6 +4,8 @@ export const STORAGE_KEYS = {
   azureApiKey: 'azure_api_key',
   geminiApiKey: 'gemini_api_key',
   systemPrompt: 'chat_system_prompt',
+  contextReplayEnabled: 'context_replay_enabled',
+  contextReplayCount: 'context_replay_count',
   chatHistory: 'chat_history_v1',
 };
 

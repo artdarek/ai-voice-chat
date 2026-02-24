@@ -3,8 +3,17 @@ import { HISTORY_LIMITS, MEMORY_CONTEXT_HEADER } from '../constants.js';
 /**
  * Builds a compact reconnect context message from recent conversation history.
  */
-export function buildModelMemoryMessage(history) {
-  const recent = history.slice(-HISTORY_LIMITS.replayMessages);
+export function buildModelMemoryMessage(history, options = {}) {
+  const enabled = options.enabled !== false;
+  if (!enabled) {
+    return '';
+  }
+
+  const rawCount = Number(options.count);
+  const normalizedCount = Number.isInteger(rawCount) && rawCount > 0
+    ? rawCount
+    : HISTORY_LIMITS.replayMessages;
+  const recent = history.slice(-normalizedCount);
   if (!recent.length) {
     return '';
   }

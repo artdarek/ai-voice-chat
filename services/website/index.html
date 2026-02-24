@@ -62,7 +62,10 @@
           </div>
           <span class="usage-summary-value">
             <i class="bi bi-bar-chart-line usage-summary-icon" aria-hidden="true"></i>
-            <span id="usage-summary-text">in: 0 · out: 0 · total: 0</span>
+            <span id="usage-summary-text">in 0/0 (0) · out 0/0 (0) · total 0/0 (0)</span>
+            <span class="usage-summary-separator" aria-hidden="true">|</span>
+            <i class="bi bi-chat-left-text usage-summary-chat-icon" aria-hidden="true"></i>
+            <span id="usage-summary-interactions">0</span>
           </span>
         </div>
 
@@ -325,6 +328,30 @@
           rows="8"
           spellcheck="false"
         ></textarea>
+      </div>
+
+      <div class="app-modal-field context-replay-field">
+        <div class="context-replay-toggle-row">
+          <label for="context-replay-enabled">Add history to context</label>
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="context-replay-enabled" checked />
+          </div>
+        </div>
+        <div class="context-replay-inline-row">
+          <span>Add last</span>
+          <div class="input-wrap context-replay-count-wrap">
+            <input
+              type="number"
+              id="context-replay-count"
+              min="1"
+              step="1"
+              value="10"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <span>messages to context</span>
+        </div>
       </div>
 
       <div class="app-modal-actions">

@@ -18,24 +18,60 @@ export function createChatView(transcript, emptyState) {
   /**
    * Formats optional usage metadata into a compact token summary.
    */
-  function formatUsage(usage) {
-    if (!usage || typeof usage !== 'object') {
+  function formatUsage(usage, rawResponse) {
+    const breakdown = extractUsageBreakdown(usage, rawResponse);
+    if (!breakdown) {
       return '';
     }
 
-    const hasNumber = (value) => Number.isInteger(value) && value >= 0;
-    const parts = [];
-    if (hasNumber(usage.inputTokens)) {
-      parts.push(`in ${usage.inputTokens}`);
-    }
-    if (hasNumber(usage.outputTokens)) {
-      parts.push(`out ${usage.outputTokens}`);
-    }
-    if (hasNumber(usage.totalTokens)) {
-      parts.push(`total ${usage.totalTokens}`);
+    return [
+      `in ${breakdown.inputTextTokens}/${breakdown.inputAudioTokens} (${breakdown.inputTokens})`,
+      `out ${breakdown.outputTextTokens}/${breakdown.outputAudioTokens} (${breakdown.outputTokens})`,
+      `total ${breakdown.inputTokens}/${breakdown.outputTokens} (${breakdown.totalTokens})`,
+    ].join(' · ');
+  }
+
+  function extractUsageBreakdown(usage, rawResponse) {
+    if ((!usage || typeof usage !== 'object') && (!rawResponse || typeof rawResponse !== 'object')) {
+      return null;
     }
 
-    return parts.length ? parts.join(' · ') : '';
+    const toInt = (value) => (Number.isFinite(value) ? Math.max(0, Math.floor(value)) : undefined);
+    const rawUsage = rawResponse?.response?.usage;
+    const inputDetails = rawUsage?.input_token_details || rawUsage?.inputTokenDetails || {};
+    const outputDetails = rawUsage?.output_token_details || rawUsage?.outputTokenDetails || {};
+
+    let inputTextTokens = toInt(inputDetails.text_tokens ?? inputDetails.textTokens) || 0;
+    let inputAudioTokens = toInt(inputDetails.audio_tokens ?? inputDetails.audioTokens) || 0;
+    let outputTextTokens = toInt(outputDetails.text_tokens ?? outputDetails.textTokens) || 0;
+    let outputAudioTokens = toInt(outputDetails.audio_tokens ?? outputDetails.audioTokens) || 0;
+
+    const usageInput = toInt(usage?.inputTokens);
+    const usageOutput = toInt(usage?.outputTokens);
+    const usageTotal = toInt(usage?.totalTokens);
+    const rawInput = toInt(rawUsage?.input_tokens ?? rawUsage?.prompt_tokens);
+    const rawOutput = toInt(rawUsage?.output_tokens ?? rawUsage?.completion_tokens);
+    const rawTotal = toInt(rawUsage?.total_tokens);
+
+    const inputTokens = rawInput ?? usageInput ?? (inputTextTokens + inputAudioTokens);
+    const outputTokens = rawOutput ?? usageOutput ?? (outputTextTokens + outputAudioTokens);
+    const totalTokens = rawTotal ?? usageTotal ?? (inputTokens + outputTokens);
+    if (inputTextTokens === 0 && inputAudioTokens === 0 && inputTokens > 0) {
+      inputTextTokens = inputTokens;
+    }
+    if (outputTextTokens === 0 && outputAudioTokens === 0 && outputTokens > 0) {
+      outputTextTokens = outputTokens;
+    }
+
+    return {
+      inputTextTokens,
+      inputAudioTokens,
+      outputTextTokens,
+      outputAudioTokens,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+    };
   }
 
   /**
@@ -58,18 +94,24 @@ export function createChatView(transcript, emptyState) {
 
     const content = document.createElement('div');
     content.className = 'message-content';
-    content.textContent = text;
+
+    const contentText = document.createElement('div');
+    contentText.className = 'message-content-text';
+    contentText.textContent = text;
 
     const body = document.createElement('div');
     body.className = 'message-body';
 
+    const dateMeta = document.createElement('div');
+    dateMeta.className = 'message-date-inside';
+    const timeValue = formatTimestamp(createdAt);
+    dateMeta.innerHTML = `<i class="bi bi-clock"></i><span>${timeValue}</span>`;
+
     const timeMeta = document.createElement('div');
     timeMeta.className = 'message-time';
-    const timeValue = formatTimestamp(createdAt);
-    timeMeta.innerHTML = `<i class="bi bi-clock"></i><span>${timeValue}</span>`;
     const createdDate = createdAt ? new Date(createdAt) : new Date();
 
-    const usageValue = formatUsage(usage);
+    const usageValue = formatUsage(usage, rawResponse);
     if (usageValue) {
       const usageMeta = document.createElement('span');
       usageMeta.className = 'message-usage';
@@ -87,14 +129,19 @@ export function createChatView(transcript, emptyState) {
       timeMeta.appendChild(infoButton);
     }
 
+    content.appendChild(contentText);
+    content.appendChild(dateMeta);
+
     msg.appendChild(avatar);
     body.appendChild(content);
-    body.appendChild(timeMeta);
+    if (timeMeta.childNodes.length) {
+      body.appendChild(timeMeta);
+    }
     msg.appendChild(body);
     transcript.appendChild(msg);
     transcript.scrollTop = transcript.scrollHeight;
 
-    msg._content = content;
+    msg._content = contentText;
     msg._time = timeMeta;
     msg._usage = usage;
     msg._rawResponse = rawResponse;

@@ -6,6 +6,7 @@ import { appendHistory, clearHistory, loadHistory } from './storage/historyStore
 import { createChatView } from './ui/chatView.js';
 import { createSettingsModal } from './ui/settingsModal.js';
 import {
+  HISTORY_LIMITS,
   STORAGE_KEYS,
   STATUS_STATE,
   STATUS_TEXT,
@@ -66,10 +67,14 @@ const btnSystemPromptCancel = document.getElementById('btn-system-prompt-cancel'
 const btnSystemPromptReset = document.getElementById('btn-system-prompt-reset');
 const btnSystemPromptSave = document.getElementById('btn-system-prompt-save');
 const systemPromptInput = document.getElementById('system-prompt-input');
+const contextReplayEnabledInput = document.getElementById('context-replay-enabled');
+const contextReplayCountInput = document.getElementById('context-replay-count');
 const usageSummaryText = document.getElementById('usage-summary-text');
+const usageSummaryInteractions = document.getElementById('usage-summary-interactions');
 
 const chatView = createChatView(transcript, emptyState);
 const playback = createOutputPlayback();
+const DEFAULT_CONTEXT_REPLAY_COUNT = 10;
 
 /**
  * Updates connection status text and indicator state.
@@ -114,14 +119,35 @@ function appendAssistantMessage(text, interrupted = false, usage = undefined, ra
  * Returns normalized per-message usage totals with safe fallback inference.
  */
 function getMessageUsageTotals(usage) {
-  if (!usage || typeof usage !== 'object') {
-    return { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-  }
+  const breakdown = getUsageBreakdown(usage, undefined);
+  return {
+    inputTokens: breakdown.inputTokens,
+    outputTokens: breakdown.outputTokens,
+    totalTokens: breakdown.totalTokens,
+  };
+}
 
-  const hasValue = (value) => Number.isInteger(value) && value >= 0;
-  let inputTokens = hasValue(usage.inputTokens) ? usage.inputTokens : undefined;
-  let outputTokens = hasValue(usage.outputTokens) ? usage.outputTokens : undefined;
-  let totalTokens = hasValue(usage.totalTokens) ? usage.totalTokens : undefined;
+function getUsageBreakdown(usage, rawResponse) {
+  const toInt = (value) => (Number.isFinite(value) ? Math.max(0, Math.floor(value)) : undefined);
+  const rawUsage = rawResponse?.response?.usage;
+  const inputDetails = rawUsage?.input_token_details || rawUsage?.inputTokenDetails || {};
+  const outputDetails = rawUsage?.output_token_details || rawUsage?.outputTokenDetails || {};
+
+  let inputTextTokens = toInt(inputDetails.text_tokens ?? inputDetails.textTokens) || 0;
+  let inputAudioTokens = toInt(inputDetails.audio_tokens ?? inputDetails.audioTokens) || 0;
+  let outputTextTokens = toInt(outputDetails.text_tokens ?? outputDetails.textTokens) || 0;
+  let outputAudioTokens = toInt(outputDetails.audio_tokens ?? outputDetails.audioTokens) || 0;
+
+  const usageInput = toInt(usage?.inputTokens);
+  const usageOutput = toInt(usage?.outputTokens);
+  const usageTotal = toInt(usage?.totalTokens);
+  const rawInput = toInt(rawUsage?.input_tokens ?? rawUsage?.prompt_tokens);
+  const rawOutput = toInt(rawUsage?.output_tokens ?? rawUsage?.completion_tokens);
+  const rawTotal = toInt(rawUsage?.total_tokens);
+
+  let inputTokens = rawInput ?? usageInput;
+  let outputTokens = rawOutput ?? usageOutput;
+  let totalTokens = rawTotal ?? usageTotal;
 
   if (typeof inputTokens !== 'number' && typeof totalTokens === 'number' && typeof outputTokens === 'number') {
     inputTokens = Math.max(0, totalTokens - outputTokens);
@@ -132,11 +158,30 @@ function getMessageUsageTotals(usage) {
   if (typeof totalTokens !== 'number' && typeof inputTokens === 'number' && typeof outputTokens === 'number') {
     totalTokens = inputTokens + outputTokens;
   }
+  if (typeof inputTokens !== 'number') {
+    inputTokens = inputTextTokens + inputAudioTokens;
+  }
+  if (typeof outputTokens !== 'number') {
+    outputTokens = outputTextTokens + outputAudioTokens;
+  }
+  if (typeof totalTokens !== 'number') {
+    totalTokens = inputTokens + outputTokens;
+  }
+  if (inputTextTokens === 0 && inputAudioTokens === 0 && inputTokens > 0) {
+    inputTextTokens = inputTokens;
+  }
+  if (outputTextTokens === 0 && outputAudioTokens === 0 && outputTokens > 0) {
+    outputTextTokens = outputTokens;
+  }
 
   return {
-    inputTokens: inputTokens || 0,
-    outputTokens: outputTokens || 0,
-    totalTokens: totalTokens || 0,
+    inputTextTokens,
+    inputAudioTokens,
+    outputTextTokens,
+    outputAudioTokens,
+    inputTokens,
+    outputTokens,
+    totalTokens,
   };
 }
 
@@ -150,40 +195,53 @@ function updateUsageSummary() {
 
   const totals = chatHistory.reduce(
     (acc, item) => {
-      const usage = getMessageUsageTotals(item?.usage);
+      const usage = getUsageBreakdown(item?.usage, item?.rawResponse);
+      acc.inputTextTokens += usage.inputTextTokens;
+      acc.inputAudioTokens += usage.inputAudioTokens;
+      acc.outputTextTokens += usage.outputTextTokens;
+      acc.outputAudioTokens += usage.outputAudioTokens;
       acc.inputTokens += usage.inputTokens;
       acc.outputTokens += usage.outputTokens;
       acc.totalTokens += usage.totalTokens;
       return acc;
     },
-    { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
+    {
+      inputTextTokens: 0,
+      inputAudioTokens: 0,
+      outputTextTokens: 0,
+      outputAudioTokens: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+    }
   );
 
   usageSummaryText.textContent =
-    `in: ${totals.inputTokens} · out: ${totals.outputTokens} · total: ${totals.totalTokens}`;
+    `in ${totals.inputTextTokens}/${totals.inputAudioTokens} (${totals.inputTokens}) · out ${totals.outputTextTokens}/${totals.outputAudioTokens} (${totals.outputTokens}) · total ${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})`;
+
+  if (usageSummaryInteractions) {
+    const interactions = chatHistory.reduce(
+      (acc, item) => acc + (item?.role === 'assistant' ? 1 : 0),
+      0
+    );
+    usageSummaryInteractions.textContent = String(interactions);
+  }
 }
 
 /**
  * Formats optional usage metadata into a compact token summary.
  */
-function formatUsage(usage) {
-  if (!usage || typeof usage !== 'object') {
+function formatUsage(usage, rawResponse) {
+  if ((!usage || typeof usage !== 'object') && (!rawResponse || typeof rawResponse !== 'object')) {
     return '';
   }
 
-  const hasNumber = (value) => Number.isInteger(value) && value >= 0;
-  const parts = [];
-  if (hasNumber(usage.inputTokens)) {
-    parts.push(`in ${usage.inputTokens}`);
-  }
-  if (hasNumber(usage.outputTokens)) {
-    parts.push(`out ${usage.outputTokens}`);
-  }
-  if (hasNumber(usage.totalTokens)) {
-    parts.push(`total ${usage.totalTokens}`);
-  }
-
-  return parts.length ? parts.join(' · ') : '';
+  const totals = getUsageBreakdown(usage, rawResponse);
+  return [
+    `in ${totals.inputTextTokens}/${totals.inputAudioTokens} (${totals.inputTokens})`,
+    `out ${totals.outputTextTokens}/${totals.outputAudioTokens} (${totals.outputTokens})`,
+    `total ${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})`,
+  ].join(' · ');
 }
 
 /**
@@ -205,7 +263,7 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
     appendAssistantMessage(finalText, interrupted, bubble._usage, bubble._rawResponse);
   }
 
-  const usageText = formatUsage(bubble._usage);
+  const usageText = formatUsage(bubble._usage, bubble._rawResponse);
   if (usageText && bubble._time && !bubble._time.querySelector('.message-usage')) {
     const usageMeta = document.createElement('span');
     usageMeta.className = 'message-usage';
@@ -230,6 +288,7 @@ function setConnectedUi() {
   btnConnect.classList.add('disconnect');
   btnConnect.disabled = false;
   btnMute.style.display = 'inline-flex';
+  voiceSelect.disabled = false;
   textInput.disabled = false;
   textInput.placeholder = UI_TEXT.inputPlaceholderConnected;
   btnSend.disabled = false;
@@ -313,6 +372,7 @@ const settingsModal = createSettingsModal(
     onProviderChanged: () => {
       if (ws) {
         disconnect();
+        connect();
       }
     },
   }
@@ -324,9 +384,7 @@ const eventRouter = createEventRouter({
   setStatus,
   chatView,
   playback,
-  setVoiceSelectDisabled: (disabled) => {
-    voiceSelect.disabled = disabled;
-  },
+  setVoiceSelectDisabled: () => {},
   appendUserMessage,
   setPendingUserBubble: (bubble) => {
     pendingUserBubble = bubble;
@@ -521,12 +579,42 @@ function getSavedSystemPrompt() {
   return localStorage.getItem(STORAGE_KEYS.systemPrompt) || '';
 }
 
+function parseContextReplayCount(value) {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return DEFAULT_CONTEXT_REPLAY_COUNT;
+  }
+  return Math.min(parsed, HISTORY_LIMITS.persistedMessages);
+}
+
+function getContextReplaySettings() {
+  const rawEnabled = localStorage.getItem(STORAGE_KEYS.contextReplayEnabled);
+  const enabled = rawEnabled === null ? true : rawEnabled !== 'false';
+  const rawCount = localStorage.getItem(STORAGE_KEYS.contextReplayCount);
+  const count = parseContextReplayCount(rawCount ?? DEFAULT_CONTEXT_REPLAY_COUNT);
+  return { enabled, count };
+}
+
+function setContextReplayControlsEnabled(enabled) {
+  if (contextReplayCountInput) {
+    contextReplayCountInput.disabled = !enabled;
+  }
+}
+
 function getEffectiveSystemPrompt() {
   return getSavedSystemPrompt() || serverSystemPrompt;
 }
 
 function openSystemPromptModal() {
+  const replay = getContextReplaySettings();
   systemPromptInput.value = getEffectiveSystemPrompt();
+  if (contextReplayEnabledInput) {
+    contextReplayEnabledInput.checked = replay.enabled;
+  }
+  if (contextReplayCountInput) {
+    contextReplayCountInput.value = String(replay.count);
+  }
+  setContextReplayControlsEnabled(replay.enabled);
   systemPromptBackdrop.style.display = 'flex';
   setTimeout(() => systemPromptInput.focus(), 50);
 }
@@ -536,6 +624,8 @@ function closeSystemPromptModal() {
 }
 
 function saveSystemPrompt() {
+  const previousReplay = getContextReplaySettings();
+  const previousEffectivePrompt = getEffectiveSystemPrompt();
   const value = systemPromptInput.value.trim();
   if (value && value !== serverSystemPrompt) {
     localStorage.setItem(STORAGE_KEYS.systemPrompt, value);
@@ -543,9 +633,26 @@ function saveSystemPrompt() {
     localStorage.removeItem(STORAGE_KEYS.systemPrompt);
   }
 
+  const replayEnabled = Boolean(contextReplayEnabledInput?.checked);
+  const replayCount = parseContextReplayCount(contextReplayCountInput?.value);
+  localStorage.setItem(STORAGE_KEYS.contextReplayEnabled, replayEnabled ? 'true' : 'false');
+  localStorage.setItem(STORAGE_KEYS.contextReplayCount, String(replayCount));
+
   closeSystemPromptModal();
 
   if (ws && ws.readyState === WebSocket.OPEN) {
+    const replay = getContextReplaySettings();
+    const promptChanged = previousEffectivePrompt !== getEffectiveSystemPrompt();
+    const replayChanged =
+      previousReplay.enabled !== replay.enabled ||
+      previousReplay.count !== replay.count;
+
+    if (replayChanged || promptChanged) {
+      disconnect();
+      connect();
+      return;
+    }
+
     ws.send(
       JSON.stringify({
         type: 'session.update',
@@ -557,6 +664,13 @@ function saveSystemPrompt() {
 
 function resetSystemPromptDraft() {
   systemPromptInput.value = serverSystemPrompt;
+  if (contextReplayEnabledInput) {
+    contextReplayEnabledInput.checked = true;
+  }
+  if (contextReplayCountInput) {
+    contextReplayCountInput.value = String(DEFAULT_CONTEXT_REPLAY_COUNT);
+  }
+  setContextReplayControlsEnabled(true);
   systemPromptInput.focus();
 }
 
@@ -665,7 +779,8 @@ async function connect() {
       })
     );
 
-    const memoryContext = buildModelMemoryMessage(chatHistory);
+    const replay = getContextReplaySettings();
+    const memoryContext = buildModelMemoryMessage(chatHistory, replay);
     if (memoryContext) {
       ws.send(
         JSON.stringify({
@@ -765,6 +880,14 @@ systemPromptInput.addEventListener('keydown', (e) => {
   }
 });
 
+contextReplayEnabledInput?.addEventListener('change', () => {
+  setContextReplayControlsEnabled(Boolean(contextReplayEnabledInput.checked));
+});
+
+contextReplayCountInput?.addEventListener('blur', () => {
+  contextReplayCountInput.value = String(parseContextReplayCount(contextReplayCountInput.value));
+});
+
 systemPromptBackdrop.addEventListener('click', (e) => {
   if (e.target === systemPromptBackdrop) {
     closeSystemPromptModal();
@@ -773,12 +896,8 @@ systemPromptBackdrop.addEventListener('click', (e) => {
 
 voiceSelect.addEventListener('change', () => {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(
-      JSON.stringify({
-        type: 'session.update',
-        session: { voice: voiceSelect.value },
-      })
-    );
+    disconnect();
+    connect();
   }
 });
 
