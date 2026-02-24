@@ -64,7 +64,7 @@ function normalizeHistory(raw) {
     return [];
   }
 
-  return raw
+  const normalized = raw
     .filter(isHistoryItemValid)
     .map((item, index) => ({
       id: item.id || `msg-${index}-${item.createdAt}`,
@@ -86,6 +86,30 @@ function normalizeHistory(raw) {
       rawResponse: isRawResponseValid(item.rawResponse) ? item.rawResponse : undefined,
       interactionId: isInteractionIdValid(item.interactionId) ? item.interactionId : undefined,
     }));
+
+  return orderHistory(normalized);
+}
+
+/**
+ * Ensures deterministic transcript ordering.
+ * For entries sharing one interactionId, user must come before assistant.
+ */
+function orderHistory(history) {
+  return [...history].sort((a, b) => {
+    if (a.interactionId && a.interactionId === b.interactionId && a.role !== b.role) {
+      return a.role === 'user' ? -1 : 1;
+    }
+
+    const aTime = Date.parse(a.createdAt);
+    const bTime = Date.parse(b.createdAt);
+    const aValidTime = Number.isNaN(aTime) ? Number.POSITIVE_INFINITY : aTime;
+    const bValidTime = Number.isNaN(bTime) ? Number.POSITIVE_INFINITY : bTime;
+    if (aValidTime !== bValidTime) {
+      return aValidTime - bValidTime;
+    }
+
+    return String(a.id).localeCompare(String(b.id));
+  });
 }
 
 /**
@@ -106,7 +130,7 @@ export function loadHistory() {
  * Persists chat history with an upper bound and returns the bounded array.
  */
 export function saveHistory(history) {
-  const bounded = history.slice(-HISTORY_LIMITS.persistedMessages);
+  const bounded = orderHistory(history).slice(-HISTORY_LIMITS.persistedMessages);
   try {
     localStorage.setItem(STORAGE_KEYS.chatHistory, JSON.stringify(bounded));
   } catch {
