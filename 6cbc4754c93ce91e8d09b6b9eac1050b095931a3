@@ -1,0 +1,47 @@
+config/providers.json
+  92b29ccd3c52e447 1-15,17-96
+services/api/services/provider_catalog.py
+  92b29ccd3c52e447 1-26
+services/api/services/provider_config.py
+  92b29ccd3c52e447 15,27-29,46-77,79,82,87-89,93-136,140-141,147,154-156,162-164,168,170
+services/website/index.html
+  92b29ccd3c52e447 95,99-102,168,301-312
+services/api/server/routes/websocket.py
+  92b29ccd3c52e447 14-15,20-22
+services/api/server/routes/settings.py
+  92b29ccd3c52e447 12,19-20,30
+services/website/css/style.css
+  92b29ccd3c52e447 541,560,583,600,608,614,630,636
+services/api/Dockerfile
+  92b29ccd3c52e447 7
+services/website/js/constants.js
+  92b29ccd3c52e447 3
+services/website/js/realtime/eventRouter.js
+  92b29ccd3c52e447 60-61,134-135
+services/website/js/storage/historyStore.js
+  92b29ccd3c52e447 49,73-74,124,142
+services/website/js/main.js
+  92b29ccd3c52e447 10,27,30-48,58,60,87-90,123-124,129-130,145-146,151-152,243-424,428-434,446,458,473,482-483,498,504,510,532-533,537,562-565,583-585,593,652-653,687-688,711-712,714-715,811-812,833-841,1091,1132-1137,1147-1148,1281-1283
+README.md
+  92b29ccd3c52e447 44-45,123,126,256,271-273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "6cbc4754c93ce91e8d09b6b9eac1050b095931a3",
+  "prompts": {
+    "92b29ccd3c52e447": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c908c-293d-7f63-8a15-7d602dcc0dee",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 601,
+      "total_deletions": 60,
+      "accepted_lines": 561,
+      "overriden_lines": 1
+    }
+  }
+}
