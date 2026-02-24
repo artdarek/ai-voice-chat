@@ -78,16 +78,33 @@ const responseInfoUsageTotal = document.getElementById('response-info-usage-tota
 const responseInfoDate = document.getElementById('response-info-date');
 const responseInfoUser = document.getElementById('response-info-user');
 const responseInfoRaw = document.getElementById('response-info-raw');
-const responseInfoAudioIn = document.getElementById('response-info-audio-in');
-const responseInfoTextIn = document.getElementById('response-info-text-in');
-const responseInfoAudioOut = document.getElementById('response-info-audio-out');
-const responseInfoTextOut = document.getElementById('response-info-text-out');
-const responseInfoAudioTotal = document.getElementById('response-info-audio-total');
-const responseInfoTextTotal = document.getElementById('response-info-text-total');
-const responseInfoCostInput = document.getElementById('response-info-cost-input');
-const responseInfoCostCachedInput = document.getElementById('response-info-cost-cached-input');
-const responseInfoCostOutput = document.getElementById('response-info-cost-output');
-const responseInfoCostTotal = document.getElementById('response-info-cost-total');
+const responseInfoAudioNcIn = document.getElementById('response-info-audio-nc-in');
+const responseInfoAudioNcOut = document.getElementById('response-info-audio-nc-out');
+const responseInfoAudioNcTotal = document.getElementById('response-info-audio-nc-total');
+const responseInfoAudioCachedIn = document.getElementById('response-info-audio-cached-in');
+const responseInfoAudioCachedOut = document.getElementById('response-info-audio-cached-out');
+const responseInfoAudioCachedTotal = document.getElementById('response-info-audio-cached-total');
+const responseInfoTextNcIn = document.getElementById('response-info-text-nc-in');
+const responseInfoTextNcOut = document.getElementById('response-info-text-nc-out');
+const responseInfoTextNcTotal = document.getElementById('response-info-text-nc-total');
+const responseInfoTextCachedIn = document.getElementById('response-info-text-cached-in');
+const responseInfoTextCachedOut = document.getElementById('response-info-text-cached-out');
+const responseInfoTextCachedTotal = document.getElementById('response-info-text-cached-total');
+const responseInfoCostTotalIn = document.getElementById('response-info-cost-total-in');
+const responseInfoCostTotalOut = document.getElementById('response-info-cost-total-out');
+const responseInfoCostTotalAll = document.getElementById('response-info-cost-total-all');
+const responseInfoCostAudioNcIn = document.getElementById('response-info-cost-audio-nc-in');
+const responseInfoCostAudioNcOut = document.getElementById('response-info-cost-audio-nc-out');
+const responseInfoCostAudioNcTotal = document.getElementById('response-info-cost-audio-nc-total');
+const responseInfoCostAudioCachedIn = document.getElementById('response-info-cost-audio-cached-in');
+const responseInfoCostAudioCachedOut = document.getElementById('response-info-cost-audio-cached-out');
+const responseInfoCostAudioCachedTotal = document.getElementById('response-info-cost-audio-cached-total');
+const responseInfoCostTextNcIn = document.getElementById('response-info-cost-text-nc-in');
+const responseInfoCostTextNcOut = document.getElementById('response-info-cost-text-nc-out');
+const responseInfoCostTextNcTotal = document.getElementById('response-info-cost-text-nc-total');
+const responseInfoCostTextCachedIn = document.getElementById('response-info-cost-text-cached-in');
+const responseInfoCostTextCachedOut = document.getElementById('response-info-cost-text-cached-out');
+const responseInfoCostTextCachedTotal = document.getElementById('response-info-cost-text-cached-total');
 const responseTabGeneral = document.getElementById('response-tab-general');
 const systemPromptBackdrop = document.getElementById('system-prompt-backdrop');
 const systemPromptClose = document.getElementById('system-prompt-close');
@@ -403,21 +420,25 @@ function estimateCostFromUsageBreakdown(usageBreakdown, provider, model) {
     return null;
   }
 
-  const inputCost = (
-    (usageBreakdown.inputTextNonCachedTokens / 1_000_000) * pricing.inputTextPer1m +
-    (usageBreakdown.inputAudioNonCachedTokens / 1_000_000) * pricing.inputAudioPer1m
-  );
-  const cachedInputCost = (
-    (usageBreakdown.inputTextCachedTokens / 1_000_000) * pricing.cachedInputTextPer1m +
-    (usageBreakdown.inputAudioCachedTokens / 1_000_000) * pricing.cachedInputAudioPer1m
-  );
-  const outputCost = (
-    (usageBreakdown.outputTextTokens / 1_000_000) * pricing.outputTextPer1m +
-    (usageBreakdown.outputAudioTokens / 1_000_000) * pricing.outputAudioPer1m
-  );
+  const inputTextNonCachedCost = (usageBreakdown.inputTextNonCachedTokens / 1_000_000) * pricing.inputTextPer1m;
+  const inputAudioNonCachedCost = (usageBreakdown.inputAudioNonCachedTokens / 1_000_000) * pricing.inputAudioPer1m;
+  const inputTextCachedCost = (usageBreakdown.inputTextCachedTokens / 1_000_000) * pricing.cachedInputTextPer1m;
+  const inputAudioCachedCost = (usageBreakdown.inputAudioCachedTokens / 1_000_000) * pricing.cachedInputAudioPer1m;
+  const outputTextCost = (usageBreakdown.outputTextTokens / 1_000_000) * pricing.outputTextPer1m;
+  const outputAudioCost = (usageBreakdown.outputAudioTokens / 1_000_000) * pricing.outputAudioPer1m;
+
+  const inputCost = inputTextNonCachedCost + inputAudioNonCachedCost;
+  const cachedInputCost = inputTextCachedCost + inputAudioCachedCost;
+  const outputCost = outputTextCost + outputAudioCost;
   const totalCost = inputCost + cachedInputCost + outputCost;
 
   return {
+    inputTextNonCachedCost,
+    inputAudioNonCachedCost,
+    inputTextCachedCost,
+    inputAudioCachedCost,
+    outputTextCost,
+    outputAudioCost,
     inputCost,
     cachedInputCost,
     outputCost,
@@ -824,21 +845,50 @@ function openResponseInfoModal(messageNode) {
     ? JSON.stringify(sourceRawResponse, null, 2)
     : '-';
   const usageDetails = extractUsageTokenBreakdown(sourceRawResponse);
-  responseInfoAudioIn.textContent = usageDetails.audioIn;
-  responseInfoTextIn.textContent = usageDetails.textIn;
-  responseInfoAudioOut.textContent = usageDetails.audioOut;
-  responseInfoTextOut.textContent = usageDetails.textOut;
-  responseInfoAudioTotal.textContent = usageDetails.audioTotal;
-  responseInfoTextTotal.textContent = usageDetails.textTotal;
+  responseInfoAudioNcIn.textContent = usageDetails.audioNonCachedIn;
+  responseInfoAudioNcOut.textContent = usageDetails.audioNonCachedOut;
+  responseInfoAudioNcTotal.textContent = usageDetails.audioNonCachedTotal;
+  responseInfoAudioCachedIn.textContent = usageDetails.audioCachedIn;
+  responseInfoAudioCachedOut.textContent = usageDetails.audioCachedOut;
+  responseInfoAudioCachedTotal.textContent = usageDetails.audioCachedTotal;
+  responseInfoTextNcIn.textContent = usageDetails.textNonCachedIn;
+  responseInfoTextNcOut.textContent = usageDetails.textNonCachedOut;
+  responseInfoTextNcTotal.textContent = usageDetails.textNonCachedTotal;
+  responseInfoTextCachedIn.textContent = usageDetails.textCachedIn;
+  responseInfoTextCachedOut.textContent = usageDetails.textCachedOut;
+  responseInfoTextCachedTotal.textContent = usageDetails.textCachedTotal;
   const usageCost = estimateCostFromUsageBreakdown(
     getUsageBreakdown(sourceUsage, sourceRawResponse),
     sourceProvider,
     sourceModel
   );
-  responseInfoCostInput.textContent = usageCost ? formatUsd(usageCost.inputCost) : '-';
-  responseInfoCostCachedInput.textContent = usageCost ? formatUsd(usageCost.cachedInputCost) : '-';
-  responseInfoCostOutput.textContent = usageCost ? formatUsd(usageCost.outputCost) : '-';
-  responseInfoCostTotal.textContent = usageCost ? formatUsd(usageCost.totalCost) : '-';
+  responseInfoCostTotalIn.textContent = usageCost ? formatUsd(usageCost.inputCost + usageCost.cachedInputCost) : '-';
+  responseInfoCostTotalOut.textContent = usageCost ? formatUsd(usageCost.outputCost) : '-';
+  responseInfoCostTotalAll.textContent = usageCost ? formatUsd(usageCost.totalCost) : '-';
+
+  const audioNonCachedIn = usageCost ? usageCost.inputAudioNonCachedCost : undefined;
+  const audioNonCachedOut = usageCost ? usageCost.outputAudioCost : undefined;
+  responseInfoCostAudioNcIn.textContent = usageCost ? formatUsd(audioNonCachedIn) : '-';
+  responseInfoCostAudioNcOut.textContent = usageCost ? formatUsd(audioNonCachedOut) : '-';
+  responseInfoCostAudioNcTotal.textContent = usageCost ? formatUsd(audioNonCachedIn + audioNonCachedOut) : '-';
+
+  const audioCachedIn = usageCost ? usageCost.inputAudioCachedCost : undefined;
+  const audioCachedOut = 0;
+  responseInfoCostAudioCachedIn.textContent = usageCost ? formatUsd(audioCachedIn) : '-';
+  responseInfoCostAudioCachedOut.textContent = '-';
+  responseInfoCostAudioCachedTotal.textContent = usageCost ? formatUsd(audioCachedIn + audioCachedOut) : '-';
+
+  const textNcIn = usageCost ? usageCost.inputTextNonCachedCost : undefined;
+  const textNcOut = usageCost ? usageCost.outputTextCost : undefined;
+  responseInfoCostTextNcIn.textContent = usageCost ? formatUsd(textNcIn) : '-';
+  responseInfoCostTextNcOut.textContent = usageCost ? formatUsd(textNcOut) : '-';
+  responseInfoCostTextNcTotal.textContent = usageCost ? formatUsd(textNcIn + textNcOut) : '-';
+
+  const textCachedIn = usageCost ? usageCost.inputTextCachedCost : undefined;
+  const textCachedOut = 0;
+  responseInfoCostTextCachedIn.textContent = usageCost ? formatUsd(textCachedIn) : '-';
+  responseInfoCostTextCachedOut.textContent = '-';
+  responseInfoCostTextCachedTotal.textContent = usageCost ? formatUsd(textCachedIn + textCachedOut) : '-';
   activateResponseGeneralTab();
   responseInfoBackdrop.style.display = 'flex';
 }
@@ -883,12 +933,18 @@ function extractUsageTokenBreakdown(rawResponse) {
   const usage = rawResponse?.response?.usage;
   if (!usage || typeof usage !== 'object') {
     return {
-      audioIn: '-',
-      audioOut: '-',
-      audioTotal: '-',
-      textIn: '-',
-      textOut: '-',
-      textTotal: '-',
+      audioNonCachedIn: '-',
+      audioNonCachedOut: '-',
+      audioNonCachedTotal: '-',
+      audioCachedIn: '-',
+      audioCachedOut: '-',
+      audioCachedTotal: '-',
+      textNonCachedIn: '-',
+      textNonCachedOut: '-',
+      textNonCachedTotal: '-',
+      textCachedIn: '-',
+      textCachedOut: '-',
+      textCachedTotal: '-',
     };
   }
 
@@ -897,14 +953,6 @@ function extractUsageTokenBreakdown(rawResponse) {
   const getTotalString = (input, output) => (
     typeof input === 'number' && typeof output === 'number' ? String(input + output) : '-'
   );
-  const formatInWithCache = (total, cached) => {
-    if (typeof total !== 'number') {
-      return '-';
-    }
-    const normalizedCached = typeof cached === 'number' ? Math.min(Math.max(cached, 0), total) : 0;
-    const nonCached = Math.max(0, total - normalizedCached);
-    return `${total} (${nonCached}/${normalizedCached})`;
-  };
 
   const inputDetails = usage.input_token_details || usage.inputTokenDetails || {};
   const outputDetails = usage.output_token_details || usage.outputTokenDetails || {};
@@ -929,14 +977,22 @@ function extractUsageTokenBreakdown(rawResponse) {
     inputDetails.cached_text_tokens ??
     inputDetails.cachedTextTokens
   ) || 0;
+  const audioNonCachedIn = typeof audioIn === 'number' ? Math.max(0, audioIn - audioCachedIn) : undefined;
+  const textNonCachedIn = typeof textIn === 'number' ? Math.max(0, textIn - textCachedIn) : undefined;
 
   return {
-    audioIn: formatInWithCache(audioIn, audioCachedIn),
-    audioOut: toTokenString(audioOut),
-    audioTotal: getTotalString(audioIn, audioOut),
-    textIn: formatInWithCache(textIn, textCachedIn),
-    textOut: toTokenString(textOut),
-    textTotal: getTotalString(textIn, textOut),
+    audioNonCachedIn: toTokenString(audioNonCachedIn),
+    audioNonCachedOut: toTokenString(audioOut),
+    audioNonCachedTotal: getTotalString(audioNonCachedIn, audioOut),
+    audioCachedIn: toTokenString(audioCachedIn),
+    audioCachedOut: '-',
+    audioCachedTotal: toTokenString(audioCachedIn),
+    textNonCachedIn: toTokenString(textNonCachedIn),
+    textNonCachedOut: toTokenString(textOut),
+    textNonCachedTotal: getTotalString(textNonCachedIn, textOut),
+    textCachedIn: toTokenString(textCachedIn),
+    textCachedOut: '-',
+    textCachedTotal: toTokenString(textCachedIn),
   };
 }
 

@@ -271,10 +271,10 @@
             <p class="response-info-value" id="response-info-date">-</p>
           </div>
           <div class="app-modal-field">
-            <label>Usage</label>
+            <label>Token Usage</label>
             <div class="response-token-breakdown">
               <div class="response-token-row">
-                <span class="response-token-kind">usage</span>
+                <span class="response-token-kind">all</span>
                 <span>in: <strong id="response-info-usage-in">-</strong></span>
                 <span>out: <strong id="response-info-usage-out">-</strong></span>
                 <span>total: <strong id="response-info-usage-total">-</strong></span>
@@ -282,19 +282,42 @@
             </div>
           </div>
           <div class="app-modal-field">
-            <label>Token breakdown</label>
+            <label>Token Usage Breakdown</label>
             <div class="response-token-breakdown">
               <div class="response-token-row">
-                <span class="response-token-kind">audio</span>
-                <span>in: <strong id="response-info-audio-in">-</strong></span>
-                <span>out: <strong id="response-info-audio-out">-</strong></span>
-                <span>total: <strong id="response-info-audio-total">-</strong></span>
+                <span class="response-token-kind">audio n/c</span>
+                <span>in: <strong id="response-info-audio-nc-in">-</strong></span>
+                <span>out: <strong id="response-info-audio-nc-out">-</strong></span>
+                <span>total: <strong id="response-info-audio-nc-total">-</strong></span>
               </div>
               <div class="response-token-row">
-                <span class="response-token-kind">text</span>
-                <span>in: <strong id="response-info-text-in">-</strong></span>
-                <span>out: <strong id="response-info-text-out">-</strong></span>
-                <span>total: <strong id="response-info-text-total">-</strong></span>
+                <span class="response-token-kind">audio cached</span>
+                <span>in: <strong id="response-info-audio-cached-in">-</strong></span>
+                <span>out: <strong id="response-info-audio-cached-out">-</strong></span>
+                <span>total: <strong id="response-info-audio-cached-total">-</strong></span>
+              </div>
+              <div class="response-token-row">
+                <span class="response-token-kind">text n/c</span>
+                <span>in: <strong id="response-info-text-nc-in">-</strong></span>
+                <span>out: <strong id="response-info-text-nc-out">-</strong></span>
+                <span>total: <strong id="response-info-text-nc-total">-</strong></span>
+              </div>
+              <div class="response-token-row">
+                <span class="response-token-kind">text cached</span>
+                <span>in: <strong id="response-info-text-cached-in">-</strong></span>
+                <span>out: <strong id="response-info-text-cached-out">-</strong></span>
+                <span>total: <strong id="response-info-text-cached-total">-</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="app-modal-field">
+            <label>Costs</label>
+            <div class="response-token-breakdown">
+              <div class="response-token-row">
+                <span class="response-token-kind">all</span>
+                <span>in: <strong id="response-info-cost-total-in">-</strong></span>
+                <span>out: <strong id="response-info-cost-total-out">-</strong></span>
+                <span>total: <strong id="response-info-cost-total-all">-</strong></span>
               </div>
             </div>
           </div>
@@ -302,14 +325,28 @@
             <label>Cost breakdown</label>
             <div class="response-token-breakdown">
               <div class="response-token-row">
-                <span class="response-token-kind">input</span>
-                <span>regular: <strong id="response-info-cost-input">-</strong></span>
-                <span>cached: <strong id="response-info-cost-cached-input">-</strong></span>
-                <span>total: <strong id="response-info-cost-total">-</strong></span>
+                <span class="response-token-kind">audio n/c</span>
+                <span>in: <strong id="response-info-cost-audio-nc-in">-</strong></span>
+                <span>out: <strong id="response-info-cost-audio-nc-out">-</strong></span>
+                <span>total: <strong id="response-info-cost-audio-nc-total">-</strong></span>
               </div>
               <div class="response-token-row">
-                <span class="response-token-kind">output</span>
-                <span>cost: <strong id="response-info-cost-output">-</strong></span>
+                <span class="response-token-kind">audio cached</span>
+                <span>in: <strong id="response-info-cost-audio-cached-in">-</strong></span>
+                <span>out: <strong id="response-info-cost-audio-cached-out">-</strong></span>
+                <span>total: <strong id="response-info-cost-audio-cached-total">-</strong></span>
+              </div>
+              <div class="response-token-row">
+                <span class="response-token-kind">text n/c</span>
+                <span>in: <strong id="response-info-cost-text-nc-in">-</strong></span>
+                <span>out: <strong id="response-info-cost-text-nc-out">-</strong></span>
+                <span>total: <strong id="response-info-cost-text-nc-total">-</strong></span>
+              </div>
+              <div class="response-token-row">
+                <span class="response-token-kind">text cached</span>
+                <span>in: <strong id="response-info-cost-text-cached-in">-</strong></span>
+                <span>out: <strong id="response-info-cost-text-cached-out">-</strong></span>
+                <span>total: <strong id="response-info-cost-text-cached-total">-</strong></span>
               </div>
             </div>
           </div>

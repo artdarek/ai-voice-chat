@@ -894,10 +894,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 
 .response-token-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(86px, 1.2fr) minmax(92px, 1fr) minmax(92px, 1fr) minmax(98px, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  column-gap: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #252531;
@@ -907,12 +907,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-variant-numeric: tabular-nums;
 }
 
+.response-token-row > span:nth-child(n + 2) {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .response-token-row strong {
   color: var(--text);
 }
 
 .response-token-kind {
   min-width: 48px;
+  white-space: nowrap;
   color: #b4b4c4;
   text-transform: lowercase;
 }
