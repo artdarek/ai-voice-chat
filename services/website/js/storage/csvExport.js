@@ -1,3 +1,5 @@
+import { estimateCostFromUsageBreakdown, getUsageBreakdown } from '../usage/costCalculator.js';
+
 /**
  * Escapes one CSV field using RFC4180-style quoting.
  */
@@ -43,83 +45,27 @@ export function downloadChatHistoryCsv(history, providerCatalog = { providers: {
     .map(escapeCsvField)
     .join(',');
 
-  const toTokenInt = (value) => (Number.isFinite(value) ? Math.max(0, Math.floor(value)) : undefined);
-  const toRate = (value) => {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) && numeric >= 0 ? numeric : 0;
-  };
-  const extractTokenBreakdown = (item) => {
-    const usage = item?.rawResponse?.response?.usage;
-    if (!usage || typeof usage !== 'object') {
-      return {
-        audioIn: '',
-        audioOut: '',
-        audioTotal: '',
-        textIn: '',
-        textOut: '',
-        textTotal: '',
-      };
-    }
-
-    const inputDetails = usage.input_token_details || usage.inputTokenDetails || {};
-    const outputDetails = usage.output_token_details || usage.outputTokenDetails || {};
-    const cachedDetails = inputDetails.cached_tokens_details || inputDetails.cachedTokenDetails || {};
-    const audioIn = toTokenInt(inputDetails.audio_tokens ?? inputDetails.audioTokens);
-    const audioOut = toTokenInt(outputDetails.audio_tokens ?? outputDetails.audioTokens);
-    const textIn = toTokenInt(inputDetails.text_tokens ?? inputDetails.textTokens);
-    const textOut = toTokenInt(outputDetails.text_tokens ?? outputDetails.textTokens);
-    const audioCachedIn = toTokenInt(cachedDetails.audio_tokens ?? cachedDetails.audioTokens) || 0;
-    const textCachedIn = toTokenInt(cachedDetails.text_tokens ?? cachedDetails.textTokens) || 0;
-    const audioNonCachedIn = typeof audioIn === 'number' ? Math.max(0, audioIn - Math.min(audioCachedIn, audioIn)) : '';
-    const textNonCachedIn = typeof textIn === 'number' ? Math.max(0, textIn - Math.min(textCachedIn, textIn)) : '';
-
-    return {
-      audioIn: typeof audioIn === 'number' ? audioIn : '',
-      audioInNonCached: audioNonCachedIn,
-      audioInCached: typeof audioIn === 'number' ? Math.min(audioCachedIn, audioIn) : '',
-      audioOut: typeof audioOut === 'number' ? audioOut : '',
-      audioTotal: typeof audioIn === 'number' && typeof audioOut === 'number' ? audioIn + audioOut : '',
-      textIn: typeof textIn === 'number' ? textIn : '',
-      textInNonCached: textNonCachedIn,
-      textInCached: typeof textIn === 'number' ? Math.min(textCachedIn, textIn) : '',
-      textOut: typeof textOut === 'number' ? textOut : '',
-      textTotal: typeof textIn === 'number' && typeof textOut === 'number' ? textIn + textOut : '',
-    };
-  };
-  const estimateRowCost = (item, breakdown) => {
+  const estimateRowCost = (item, usageBreakdown) => {
     if (String(item?.role || '').toLowerCase() === 'user') {
       return '';
     }
 
-    const provider = String(item?.provider || '').toLowerCase();
-    const model = String(item?.model || '').toLowerCase();
-    const pricing = providerCatalog?.providers?.[provider]?.pricing?.[model];
-    if (!pricing || typeof pricing !== 'object') {
+    const cost = estimateCostFromUsageBreakdown(
+      usageBreakdown,
+      providerCatalog,
+      String(item?.provider || '').toLowerCase(),
+      String(item?.model || '').toLowerCase()
+    );
+    if (!cost) {
       return '';
     }
-
-    const textNonCachedIn = Number(breakdown.textInNonCached);
-    const textCachedIn = Number(breakdown.textInCached);
-    const textOut = Number(breakdown.textOut);
-    const audioNonCachedIn = Number(breakdown.audioInNonCached);
-    const audioCachedIn = Number(breakdown.audioInCached);
-    const audioOut = Number(breakdown.audioOut);
-
-    const totalCost = (
-      ((Number.isFinite(textNonCachedIn) ? textNonCachedIn : 0) / 1_000_000) * toRate(pricing?.input?.text) +
-      ((Number.isFinite(audioNonCachedIn) ? audioNonCachedIn : 0) / 1_000_000) * toRate(pricing?.input?.audio) +
-      ((Number.isFinite(textCachedIn) ? textCachedIn : 0) / 1_000_000) * toRate(pricing?.cached_input?.text) +
-      ((Number.isFinite(audioCachedIn) ? audioCachedIn : 0) / 1_000_000) * toRate(pricing?.cached_input?.audio) +
-      ((Number.isFinite(textOut) ? textOut : 0) / 1_000_000) * toRate(pricing?.output?.text) +
-      ((Number.isFinite(audioOut) ? audioOut : 0) / 1_000_000) * toRate(pricing?.output?.audio)
-    );
-
-    return Number.isFinite(totalCost) ? totalCost.toFixed(8) : '';
+    return Number.isFinite(cost.totalCost) ? cost.totalCost.toFixed(8) : '';
   };
+  const toCsvToken = (value) => (typeof value === 'number' ? value : '');
 
   const rows = history.map((item) =>
     (() => {
-      const breakdown = extractTokenBreakdown(item);
+      const breakdown = getUsageBreakdown(item?.usage, item?.rawResponse);
       const totalCost = estimateRowCost(item, breakdown);
       return [
       item.id || '',
@@ -134,16 +80,20 @@ export function downloadChatHistoryCsv(history, providerCatalog = { providers: {
       item.usage?.inputTokens ?? '',
       item.usage?.outputTokens ?? '',
       item.usage?.totalTokens ?? '',
-      breakdown.audioIn,
-      breakdown.audioInNonCached,
-      breakdown.audioInCached,
-      breakdown.audioOut,
-      breakdown.audioTotal,
-      breakdown.textIn,
-      breakdown.textInNonCached,
-      breakdown.textInCached,
-      breakdown.textOut,
-      breakdown.textTotal,
+      toCsvToken(breakdown.inputAudioTokens),
+      toCsvToken(breakdown.inputAudioNonCachedTokens),
+      toCsvToken(breakdown.inputAudioCachedTokens),
+      toCsvToken(breakdown.outputAudioTokens),
+      (typeof breakdown.inputAudioTokens === 'number' || typeof breakdown.outputAudioTokens === 'number')
+        ? breakdown.inputAudioTokens + breakdown.outputAudioTokens
+        : '',
+      toCsvToken(breakdown.inputTextTokens),
+      toCsvToken(breakdown.inputTextNonCachedTokens),
+      toCsvToken(breakdown.inputTextCachedTokens),
+      toCsvToken(breakdown.outputTextTokens),
+      (typeof breakdown.inputTextTokens === 'number' || typeof breakdown.outputTextTokens === 'number')
+        ? breakdown.inputTextTokens + breakdown.outputTextTokens
+        : '',
       item.text || '',
       totalCost,
     ];

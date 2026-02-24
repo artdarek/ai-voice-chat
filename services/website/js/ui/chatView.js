@@ -1,3 +1,5 @@
+import { getUsageBreakdown } from '../usage/costCalculator.js';
+
 /**
  * Creates transcript view helpers for message rendering and transcript state.
  */
@@ -19,7 +21,7 @@ export function createChatView(transcript, emptyState) {
    * Formats optional usage metadata into a compact token summary.
    */
   function formatUsageMarkup(usage, rawResponse) {
-    const breakdown = extractUsageBreakdown(usage, rawResponse);
+    const breakdown = getUsageBreakdown(usage, rawResponse);
     if (!breakdown) {
       return '';
     }
@@ -30,58 +32,6 @@ export function createChatView(transcript, emptyState) {
       `<span>·</span>`,
       `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>in: ${breakdown.inputTextNonCachedTokens}/${breakdown.inputTextCachedTokens} out: ${breakdown.outputTextTokens}</span>`,
     ].join(' ');
-  }
-
-  function extractUsageBreakdown(usage, rawResponse) {
-    if ((!usage || typeof usage !== 'object') && (!rawResponse || typeof rawResponse !== 'object')) {
-      return null;
-    }
-
-    const toInt = (value) => (Number.isFinite(value) ? Math.max(0, Math.floor(value)) : undefined);
-    const rawUsage = rawResponse?.response?.usage;
-    const inputDetails = rawUsage?.input_token_details || rawUsage?.inputTokenDetails || {};
-    const outputDetails = rawUsage?.output_token_details || rawUsage?.outputTokenDetails || {};
-    const cachedDetails = inputDetails.cached_tokens_details || inputDetails.cachedTokenDetails || {};
-
-    let inputTextTokens = toInt(inputDetails.text_tokens ?? inputDetails.textTokens) || 0;
-    let inputAudioTokens = toInt(inputDetails.audio_tokens ?? inputDetails.audioTokens) || 0;
-    let outputTextTokens = toInt(outputDetails.text_tokens ?? outputDetails.textTokens) || 0;
-    let outputAudioTokens = toInt(outputDetails.audio_tokens ?? outputDetails.audioTokens) || 0;
-    const inputAudioCachedTokens = toInt(cachedDetails.audio_tokens ?? cachedDetails.audioTokens) || 0;
-    const inputTextCachedTokens = toInt(cachedDetails.text_tokens ?? cachedDetails.textTokens) || 0;
-
-    const usageInput = toInt(usage?.inputTokens);
-    const usageOutput = toInt(usage?.outputTokens);
-    const usageTotal = toInt(usage?.totalTokens);
-    const rawInput = toInt(rawUsage?.input_tokens ?? rawUsage?.prompt_tokens);
-    const rawOutput = toInt(rawUsage?.output_tokens ?? rawUsage?.completion_tokens);
-    const rawTotal = toInt(rawUsage?.total_tokens);
-
-    const inputTokens = rawInput ?? usageInput ?? (inputTextTokens + inputAudioTokens);
-    const outputTokens = rawOutput ?? usageOutput ?? (outputTextTokens + outputAudioTokens);
-    const totalTokens = rawTotal ?? usageTotal ?? (inputTokens + outputTokens);
-    if (inputTextTokens === 0 && inputAudioTokens === 0 && inputTokens > 0) {
-      inputTextTokens = inputTokens;
-    }
-    if (outputTextTokens === 0 && outputAudioTokens === 0 && outputTokens > 0) {
-      outputTextTokens = outputTokens;
-    }
-    const normalizedAudioCached = Math.min(inputAudioCachedTokens, inputAudioTokens);
-    const normalizedTextCached = Math.min(inputTextCachedTokens, inputTextTokens);
-
-    return {
-      inputTextTokens,
-      inputAudioTokens,
-      inputTextNonCachedTokens: Math.max(0, inputTextTokens - normalizedTextCached),
-      inputAudioNonCachedTokens: Math.max(0, inputAudioTokens - normalizedAudioCached),
-      inputTextCachedTokens: normalizedTextCached,
-      inputAudioCachedTokens: normalizedAudioCached,
-      outputTextTokens,
-      outputAudioTokens,
-      inputTokens,
-      outputTokens,
-      totalTokens,
-    };
   }
 
   /**
