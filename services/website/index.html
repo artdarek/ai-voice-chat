@@ -257,12 +257,36 @@
       <div class="tab-content response-info-tab-content">
         <div class="tab-pane fade show active" id="response-panel-general" role="tabpanel" aria-labelledby="response-tab-general">
           <div class="app-modal-field">
-            <label>Usage</label>
-            <p class="response-info-value" id="response-info-usage">-</p>
-          </div>
-          <div class="app-modal-field">
             <label>Date</label>
             <p class="response-info-value" id="response-info-date">-</p>
+          </div>
+          <div class="app-modal-field">
+            <label>Usage</label>
+            <div class="response-token-breakdown">
+              <div class="response-token-row">
+                <span class="response-token-kind">usage</span>
+                <span>in: <strong id="response-info-usage-in">-</strong></span>
+                <span>out: <strong id="response-info-usage-out">-</strong></span>
+                <span>total: <strong id="response-info-usage-total">-</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="app-modal-field">
+            <label>Token breakdown</label>
+            <div class="response-token-breakdown">
+              <div class="response-token-row">
+                <span class="response-token-kind">audio</span>
+                <span>in: <strong id="response-info-audio-in">-</strong></span>
+                <span>out: <strong id="response-info-audio-out">-</strong></span>
+                <span>total: <strong id="response-info-audio-total">-</strong></span>
+              </div>
+              <div class="response-token-row">
+                <span class="response-token-kind">text</span>
+                <span>in: <strong id="response-info-text-in">-</strong></span>
+                <span>out: <strong id="response-info-text-out">-</strong></span>
+                <span>total: <strong id="response-info-text-total">-</strong></span>
+              </div>
+            </div>
           </div>
         </div>
 

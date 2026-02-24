@@ -837,6 +837,40 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   padding-top: 12px;
 }
 
+.response-info-tab-content .app-modal-field + .app-modal-field {
+  margin-top: 10px;
+}
+
+.response-token-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.response-token-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #252531;
+  padding: 7px 9px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.response-token-row strong {
+  color: var(--text);
+}
+
+.response-token-kind {
+  min-width: 48px;
+  color: #b4b4c4;
+  text-transform: lowercase;
+}
+
 .response-info-user {
   white-space: pre-wrap;
   word-break: break-word;

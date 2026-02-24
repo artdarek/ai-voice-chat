@@ -47,10 +47,18 @@ const btnClearCancel = document.getElementById('btn-clear-cancel');
 const btnClearConfirm = document.getElementById('btn-clear-confirm');
 const responseInfoBackdrop = document.getElementById('response-info-backdrop');
 const responseInfoClose = document.getElementById('response-info-close');
-const responseInfoUsage = document.getElementById('response-info-usage');
+const responseInfoUsageIn = document.getElementById('response-info-usage-in');
+const responseInfoUsageOut = document.getElementById('response-info-usage-out');
+const responseInfoUsageTotal = document.getElementById('response-info-usage-total');
 const responseInfoDate = document.getElementById('response-info-date');
 const responseInfoUser = document.getElementById('response-info-user');
 const responseInfoRaw = document.getElementById('response-info-raw');
+const responseInfoAudioIn = document.getElementById('response-info-audio-in');
+const responseInfoTextIn = document.getElementById('response-info-text-in');
+const responseInfoAudioOut = document.getElementById('response-info-audio-out');
+const responseInfoTextOut = document.getElementById('response-info-text-out');
+const responseInfoAudioTotal = document.getElementById('response-info-audio-total');
+const responseInfoTextTotal = document.getElementById('response-info-text-total');
 const responseTabGeneral = document.getElementById('response-tab-general');
 const systemPromptBackdrop = document.getElementById('system-prompt-backdrop');
 const systemPromptClose = document.getElementById('system-prompt-close');
@@ -417,12 +425,22 @@ function openResponseInfoModal(messageNode) {
   const createdAtIso = messageNode._createdAt;
   const createdAt = createdAtIso ? new Date(createdAtIso) : new Date();
   const hasValidDate = !Number.isNaN(createdAt.getTime());
+  const usageDisplay = getUsageDisplayValues(messageNode._usage);
   responseInfoDate.textContent = hasValidDate ? createdAt.toLocaleString() : '-';
-  responseInfoUsage.textContent = formatUsage(messageNode._usage) || '-';
+  responseInfoUsageIn.textContent = usageDisplay.inputTokens;
+  responseInfoUsageOut.textContent = usageDisplay.outputTokens;
+  responseInfoUsageTotal.textContent = usageDisplay.totalTokens;
   responseInfoUser.value = findPreviousUserMessageText(messageNode);
   responseInfoRaw.textContent = messageNode._rawResponse
     ? JSON.stringify(messageNode._rawResponse, null, 2)
     : '-';
+  const usageDetails = extractUsageTokenBreakdown(messageNode._rawResponse);
+  responseInfoAudioIn.textContent = usageDetails.audioIn;
+  responseInfoTextIn.textContent = usageDetails.textIn;
+  responseInfoAudioOut.textContent = usageDetails.audioOut;
+  responseInfoTextOut.textContent = usageDetails.textOut;
+  responseInfoAudioTotal.textContent = usageDetails.audioTotal;
+  responseInfoTextTotal.textContent = usageDetails.textTotal;
   activateResponseGeneralTab();
   responseInfoBackdrop.style.display = 'flex';
 }
@@ -443,6 +461,60 @@ function activateResponseGeneralTab() {
   }
 
   responseTabGeneral.click();
+}
+
+function getUsageDisplayValues(usage) {
+  if (!usage || typeof usage !== 'object') {
+    return { inputTokens: '-', outputTokens: '-', totalTokens: '-' };
+  }
+
+  const hasValue = (value) => Number.isInteger(value) && value >= 0;
+  const totals = getMessageUsageTotals(usage);
+  const hasInput = hasValue(usage.inputTokens) || (hasValue(usage.totalTokens) && hasValue(usage.outputTokens));
+  const hasOutput = hasValue(usage.outputTokens) || (hasValue(usage.totalTokens) && hasValue(usage.inputTokens));
+  const hasTotal = hasValue(usage.totalTokens) || (hasValue(usage.inputTokens) && hasValue(usage.outputTokens));
+
+  return {
+    inputTokens: hasInput ? String(totals.inputTokens) : '-',
+    outputTokens: hasOutput ? String(totals.outputTokens) : '-',
+    totalTokens: hasTotal ? String(totals.totalTokens) : '-',
+  };
+}
+
+function extractUsageTokenBreakdown(rawResponse) {
+  const usage = rawResponse?.response?.usage;
+  if (!usage || typeof usage !== 'object') {
+    return {
+      audioIn: '-',
+      audioOut: '-',
+      audioTotal: '-',
+      textIn: '-',
+      textOut: '-',
+      textTotal: '-',
+    };
+  }
+
+  const toTokenInt = (value) => (Number.isFinite(value) ? Math.max(0, Math.floor(value)) : undefined);
+  const toTokenString = (value) => (typeof value === 'number' ? String(value) : '-');
+  const getTotalString = (input, output) => (
+    typeof input === 'number' && typeof output === 'number' ? String(input + output) : '-'
+  );
+
+  const inputDetails = usage.input_token_details || usage.inputTokenDetails || {};
+  const outputDetails = usage.output_token_details || usage.outputTokenDetails || {};
+  const audioIn = toTokenInt(inputDetails.audio_tokens ?? inputDetails.audioTokens);
+  const textIn = toTokenInt(inputDetails.text_tokens ?? inputDetails.textTokens);
+  const audioOut = toTokenInt(outputDetails.audio_tokens ?? outputDetails.audioTokens);
+  const textOut = toTokenInt(outputDetails.text_tokens ?? outputDetails.textTokens);
+
+  return {
+    audioIn: toTokenString(audioIn),
+    audioOut: toTokenString(audioOut),
+    audioTotal: getTotalString(audioIn, audioOut),
+    textIn: toTokenString(textIn),
+    textOut: toTokenString(textOut),
+    textTotal: getTotalString(textIn, textOut),
+  };
 }
 
 function getSavedSystemPrompt() {
