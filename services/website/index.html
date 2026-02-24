@@ -236,7 +236,7 @@
             role="tab"
             aria-controls="response-panel-general"
             aria-selected="true"
-          >General</button>
+          ><i class="bi bi-info-circle" aria-hidden="true"></i>General</button>
         </li>
         <li class="nav-item" role="presentation">
           <button
@@ -248,7 +248,7 @@
             role="tab"
             aria-controls="response-panel-message"
             aria-selected="false"
-          >Message</button>
+          ><i class="bi bi-chat-left-text" aria-hidden="true"></i>Message</button>
         </li>
         <li class="nav-item" role="presentation">
           <button
@@ -260,18 +260,28 @@
             role="tab"
             aria-controls="response-panel-raw"
             aria-selected="false"
-          >Raw response</button>
+          ><i class="bi bi-code-slash" aria-hidden="true"></i>Raw response</button>
         </li>
       </ul>
 
       <div class="tab-content response-info-tab-content">
         <div class="tab-pane fade show active" id="response-panel-general" role="tabpanel" aria-labelledby="response-tab-general">
-          <div class="app-modal-field">
-            <label>Date</label>
-            <p class="response-info-value" id="response-info-date">-</p>
+          <div class="response-meta-row">
+            <div class="app-modal-field">
+              <label class="label-with-icon"><i class="bi bi-calendar3" aria-hidden="true"></i>Date</label>
+              <p class="response-info-value" id="response-info-date">-</p>
+            </div>
+            <div class="app-modal-field">
+              <label class="label-with-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i>Provider</label>
+              <p class="response-info-value" id="response-info-provider">-</p>
+            </div>
+            <div class="app-modal-field">
+              <label class="label-with-icon"><i class="bi bi-cpu" aria-hidden="true"></i>Model</label>
+              <p class="response-info-value" id="response-info-model">-</p>
+            </div>
           </div>
           <div class="app-modal-field">
-            <label>Token Usage</label>
+            <label class="label-with-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i>Token Usage</label>
             <div class="response-token-breakdown">
               <div class="response-token-row">
                 <span class="response-token-kind">all</span>
@@ -279,11 +289,6 @@
                 <span>out: <strong id="response-info-usage-out">-</strong></span>
                 <span>total: <strong id="response-info-usage-total">-</strong></span>
               </div>
-            </div>
-          </div>
-          <div class="app-modal-field">
-            <label>Token Usage Breakdown</label>
-            <div class="response-token-breakdown">
               <div class="response-token-row">
                 <span class="response-token-kind">audio n/c</span>
                 <span>in: <strong id="response-info-audio-nc-in">-</strong></span>
@@ -311,7 +316,7 @@
             </div>
           </div>
           <div class="app-modal-field">
-            <label>Costs</label>
+            <label class="label-with-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i>Costs</label>
             <div class="response-token-breakdown">
               <div class="response-token-row">
                 <span class="response-token-kind">all</span>
@@ -319,11 +324,6 @@
                 <span>out: <strong id="response-info-cost-total-out">-</strong></span>
                 <span>total: <strong id="response-info-cost-total-all">-</strong></span>
               </div>
-            </div>
-          </div>
-          <div class="app-modal-field">
-            <label>Cost breakdown</label>
-            <div class="response-token-breakdown">
               <div class="response-token-row">
                 <span class="response-token-kind">audio n/c</span>
                 <span>in: <strong id="response-info-cost-audio-nc-in">-</strong></span>
@@ -354,18 +354,18 @@
 
         <div class="tab-pane fade" id="response-panel-message" role="tabpanel" aria-labelledby="response-tab-message">
           <div class="app-modal-field">
-            <label>User message</label>
+            <label class="label-with-icon"><i class="bi bi-person" aria-hidden="true"></i>User message</label>
             <textarea class="response-info-raw response-info-user-textarea" id="response-info-user" rows="8" readonly>-</textarea>
           </div>
           <div class="app-modal-field">
-            <label>Assistant message</label>
+            <label class="label-with-icon"><i class="bi bi-robot" aria-hidden="true"></i>Assistant message</label>
             <textarea class="response-info-raw response-info-user-textarea" id="response-info-assistant" rows="8" readonly>-</textarea>
           </div>
         </div>
 
         <div class="tab-pane fade" id="response-panel-raw" role="tabpanel" aria-labelledby="response-tab-raw">
           <div class="app-modal-field">
-            <label>Raw response</label>
+            <label class="label-with-icon"><i class="bi bi-braces" aria-hidden="true"></i>Raw response</label>
             <pre class="response-info-raw" id="response-info-raw">-</pre>
           </div>
         </div>

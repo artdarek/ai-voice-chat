@@ -76,6 +76,8 @@ const responseInfoUsageIn = document.getElementById('response-info-usage-in');
 const responseInfoUsageOut = document.getElementById('response-info-usage-out');
 const responseInfoUsageTotal = document.getElementById('response-info-usage-total');
 const responseInfoDate = document.getElementById('response-info-date');
+const responseInfoProvider = document.getElementById('response-info-provider');
+const responseInfoModel = document.getElementById('response-info-model');
 const responseInfoUser = document.getElementById('response-info-user');
 const responseInfoAssistant = document.getElementById('response-info-assistant');
 const responseInfoRaw = document.getElementById('response-info-raw');
@@ -841,6 +843,8 @@ function openResponseInfoModal(messageNode) {
   const hasValidDate = !Number.isNaN(createdAt.getTime());
   const usageDisplay = getUsageDisplayValues(sourceUsage);
   responseInfoDate.textContent = hasValidDate ? createdAt.toLocaleString() : '-';
+  responseInfoProvider.textContent = sourceProvider || '-';
+  responseInfoModel.textContent = sourceModel || '-';
   responseInfoUsageIn.textContent = usageDisplay.inputTokens;
   responseInfoUsageOut.textContent = usageDisplay.outputTokens;
   responseInfoUsageTotal.textContent = usageDisplay.totalTokens;

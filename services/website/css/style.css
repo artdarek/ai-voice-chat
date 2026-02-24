@@ -852,6 +852,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--text);
 }
 
+.response-meta-row .response-info-value {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .response-info-modal {
   max-width: 680px;
 }
@@ -866,6 +871,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-size: 0.8rem;
   border-radius: 8px 8px 0 0;
   margin-bottom: -1px;
+}
+
+.response-info-tabs .nav-link .bi {
+  margin-right: 6px;
+  font-size: 0.78rem;
 }
 
 .response-info-tabs .nav-link:hover {
@@ -884,7 +894,37 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 
 .response-info-tab-content .app-modal-field + .app-modal-field {
-  margin-top: 10px;
+  margin-top: 16px;
+}
+
+.response-meta-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.response-meta-row .app-modal-field + .app-modal-field {
+  margin-top: 0;
+}
+
+.response-meta-row + .app-modal-field {
+  margin-top: 16px;
+}
+
+.label-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label-with-icon .bi {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 760px) {
+  .response-meta-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .response-token-breakdown {
