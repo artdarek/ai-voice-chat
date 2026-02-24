@@ -9,7 +9,7 @@ function escapeCsvField(value) {
 /**
  * Triggers browser download of chat history as CSV.
  */
-export function downloadChatHistoryCsv(history) {
+export function downloadChatHistoryCsv(history, providerCatalog = { providers: {} }) {
   if (!Array.isArray(history) || !history.length) {
     return;
   }
@@ -19,6 +19,8 @@ export function downloadChatHistoryCsv(history) {
     'interactionId',
     'createdAt',
     'provider',
+    'model',
+    'voice',
     'role',
     'inputType',
     'interrupted',
@@ -36,11 +38,16 @@ export function downloadChatHistoryCsv(history) {
     'textOutputTokens',
     'textTotalTokens',
     'text',
+    'totalCostUsd',
   ]
     .map(escapeCsvField)
     .join(',');
 
   const toTokenInt = (value) => (Number.isFinite(value) ? Math.max(0, Math.floor(value)) : undefined);
+  const toRate = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric >= 0 ? numeric : 0;
+  };
   const extractTokenBreakdown = (item) => {
     const usage = item?.rawResponse?.response?.usage;
     if (!usage || typeof usage !== 'object') {
@@ -79,15 +86,48 @@ export function downloadChatHistoryCsv(history) {
       textTotal: typeof textIn === 'number' && typeof textOut === 'number' ? textIn + textOut : '',
     };
   };
+  const estimateRowCost = (item, breakdown) => {
+    if (String(item?.role || '').toLowerCase() === 'user') {
+      return '';
+    }
+
+    const provider = String(item?.provider || '').toLowerCase();
+    const model = String(item?.model || '').toLowerCase();
+    const pricing = providerCatalog?.providers?.[provider]?.pricing?.[model];
+    if (!pricing || typeof pricing !== 'object') {
+      return '';
+    }
+
+    const textNonCachedIn = Number(breakdown.textInNonCached);
+    const textCachedIn = Number(breakdown.textInCached);
+    const textOut = Number(breakdown.textOut);
+    const audioNonCachedIn = Number(breakdown.audioInNonCached);
+    const audioCachedIn = Number(breakdown.audioInCached);
+    const audioOut = Number(breakdown.audioOut);
+
+    const totalCost = (
+      ((Number.isFinite(textNonCachedIn) ? textNonCachedIn : 0) / 1_000_000) * toRate(pricing?.input?.text) +
+      ((Number.isFinite(audioNonCachedIn) ? audioNonCachedIn : 0) / 1_000_000) * toRate(pricing?.input?.audio) +
+      ((Number.isFinite(textCachedIn) ? textCachedIn : 0) / 1_000_000) * toRate(pricing?.cached_input?.text) +
+      ((Number.isFinite(audioCachedIn) ? audioCachedIn : 0) / 1_000_000) * toRate(pricing?.cached_input?.audio) +
+      ((Number.isFinite(textOut) ? textOut : 0) / 1_000_000) * toRate(pricing?.output?.text) +
+      ((Number.isFinite(audioOut) ? audioOut : 0) / 1_000_000) * toRate(pricing?.output?.audio)
+    );
+
+    return Number.isFinite(totalCost) ? totalCost.toFixed(8) : '';
+  };
 
   const rows = history.map((item) =>
     (() => {
       const breakdown = extractTokenBreakdown(item);
+      const totalCost = estimateRowCost(item, breakdown);
       return [
       item.id || '',
       item.interactionId || '',
       item.createdAt || '',
       item.provider || 'unknown',
+      item.model || 'unknown',
+      item.voice || 'unknown',
       item.role || '',
       item.inputType || 'n/a',
       String(Boolean(item.interrupted)),
@@ -105,6 +145,7 @@ export function downloadChatHistoryCsv(history) {
       breakdown.textOut,
       breakdown.textTotal,
       item.text || '',
+      totalCost,
     ];
     })()
       .map(escapeCsvField)

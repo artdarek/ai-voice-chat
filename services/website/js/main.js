@@ -77,6 +77,7 @@ const responseInfoUsageOut = document.getElementById('response-info-usage-out');
 const responseInfoUsageTotal = document.getElementById('response-info-usage-total');
 const responseInfoDate = document.getElementById('response-info-date');
 const responseInfoUser = document.getElementById('response-info-user');
+const responseInfoAssistant = document.getElementById('response-info-assistant');
 const responseInfoRaw = document.getElementById('response-info-raw');
 const responseInfoAudioNcIn = document.getElementById('response-info-audio-nc-in');
 const responseInfoAudioNcOut = document.getElementById('response-info-audio-nc-out');
@@ -145,6 +146,7 @@ function appendUserMessage(text, inputType = 'text', interactionId = undefined) 
     text,
     selectedProvider,
     activeSessionModel || selectedTarget.resolvedModel,
+    voiceSelect.value || 'unknown',
     false,
     inputType,
     undefined,
@@ -167,6 +169,7 @@ function appendAssistantMessage(text, interrupted = false, usage = undefined, ra
     text,
     selectedProvider,
     activeSessionModel || selectedTarget.resolvedModel,
+    voiceSelect.value || 'unknown',
     interrupted,
     'n/a',
     usage,
@@ -832,6 +835,7 @@ function openResponseInfoModal(messageNode) {
   const sourceProvider = sourceEntry?.provider ?? messageNode._provider;
   const sourceModel = sourceEntry?.model ?? messageNode._model;
   const sourceUserText = historyContext?.userText ?? findPreviousUserMessageText(messageNode);
+  const sourceAssistantText = (sourceEntry?.text || '').trim() || '-';
   const createdAtIso = sourceEntry?.createdAt ?? messageNode._createdAt;
   const createdAt = createdAtIso ? new Date(createdAtIso) : new Date();
   const hasValidDate = !Number.isNaN(createdAt.getTime());
@@ -841,6 +845,9 @@ function openResponseInfoModal(messageNode) {
   responseInfoUsageOut.textContent = usageDisplay.outputTokens;
   responseInfoUsageTotal.textContent = usageDisplay.totalTokens;
   responseInfoUser.value = sourceUserText;
+  if (responseInfoAssistant) {
+    responseInfoAssistant.value = sourceAssistantText;
+  }
   responseInfoRaw.textContent = sourceRawResponse
     ? JSON.stringify(sourceRawResponse, null, 2)
     : '-';
@@ -1263,7 +1270,7 @@ btnClearChat.addEventListener('click', () => {
   openClearConfirmModal();
 });
 btnDownloadChat.addEventListener('click', () => {
-  downloadChatHistoryCsv(chatHistory);
+  downloadChatHistoryCsv(chatHistory, providerCatalog);
 });
 
 btnClearConfirm.addEventListener('click', () => {

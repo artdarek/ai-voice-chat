@@ -58,7 +58,7 @@
         {
           "id": "gpt-realtime",
           "label": "gpt-realtime",
-          "enabled": true
+          "enabled": false
         }
       ],
       "pricing": {

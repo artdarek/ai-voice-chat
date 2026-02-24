@@ -47,6 +47,7 @@ function isHistoryItemValid(item) {
     typeof item.createdAt === 'string' &&
     (typeof item.provider === 'string' || typeof item.provider === 'undefined') &&
     (typeof item.model === 'string' || typeof item.model === 'undefined') &&
+    (typeof item.voice === 'string' || typeof item.voice === 'undefined') &&
     (typeof item.interrupted === 'boolean' || typeof item.interrupted === 'undefined') &&
     (typeof item.inputType === 'string' || typeof item.inputType === 'undefined') &&
     isUsageValid(item.usage) &&
@@ -72,6 +73,7 @@ function normalizeHistory(raw) {
       createdAt: item.createdAt,
       provider: (item.provider || 'unknown').toLowerCase(),
       model: (item.model || 'unknown').toLowerCase(),
+      voice: (item.voice || 'unknown').toLowerCase(),
       interrupted: Boolean(item.interrupted),
       inputType: item.inputType || 'n/a',
       usage: item.usage
@@ -122,6 +124,7 @@ export function appendHistory(
   text,
   provider = 'unknown',
   model = 'unknown',
+  voice = 'unknown',
   interrupted = false,
   inputType = 'n/a',
   usage = undefined,
@@ -140,6 +143,7 @@ export function appendHistory(
     createdAt: new Date().toISOString(),
     provider: (provider || 'unknown').toLowerCase(),
     model: (model || 'unknown').toLowerCase(),
+    voice: (voice || 'unknown').toLowerCase(),
     interrupted: Boolean(interrupted),
     inputType: (inputType || 'n/a').toLowerCase(),
     usage: isUsageValid(usage) ? usage : undefined,
