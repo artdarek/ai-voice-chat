@@ -207,7 +207,7 @@
 
   <!-- Response Info Modal -->
   <div class="app-modal-backdrop" id="response-info-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="response-info-title">
-    <div class="app-modal">
+    <div class="app-modal response-info-modal">
       <div class="app-modal-header">
         <h2 id="response-info-title">Response details</h2>
         <button class="app-modal-close" id="response-info-close" aria-label="Close">
@@ -215,19 +215,70 @@
         </button>
       </div>
 
-      <div class="app-modal-field">
-        <label>Usage</label>
-        <p class="response-info-value" id="response-info-usage">-</p>
-      </div>
+      <ul class="nav nav-tabs response-info-tabs" role="tablist" aria-label="Response details sections">
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link active"
+            id="response-tab-general"
+            data-bs-toggle="tab"
+            data-bs-target="#response-panel-general"
+            type="button"
+            role="tab"
+            aria-controls="response-panel-general"
+            aria-selected="true"
+          >General</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            id="response-tab-message"
+            data-bs-toggle="tab"
+            data-bs-target="#response-panel-message"
+            type="button"
+            role="tab"
+            aria-controls="response-panel-message"
+            aria-selected="false"
+          >Message</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            id="response-tab-raw"
+            data-bs-toggle="tab"
+            data-bs-target="#response-panel-raw"
+            type="button"
+            role="tab"
+            aria-controls="response-panel-raw"
+            aria-selected="false"
+          >Raw response</button>
+        </li>
+      </ul>
 
-      <div class="app-modal-field">
-        <label>Date</label>
-        <p class="response-info-value" id="response-info-date">-</p>
-      </div>
+      <div class="tab-content response-info-tab-content">
+        <div class="tab-pane fade show active" id="response-panel-general" role="tabpanel" aria-labelledby="response-tab-general">
+          <div class="app-modal-field">
+            <label>Usage</label>
+            <p class="response-info-value" id="response-info-usage">-</p>
+          </div>
+          <div class="app-modal-field">
+            <label>Date</label>
+            <p class="response-info-value" id="response-info-date">-</p>
+          </div>
+        </div>
 
-      <div class="app-modal-field">
-        <label>User message</label>
-        <p class="response-info-value response-info-user" id="response-info-user">-</p>
+        <div class="tab-pane fade" id="response-panel-message" role="tabpanel" aria-labelledby="response-tab-message">
+          <div class="app-modal-field">
+            <label>User message</label>
+            <textarea class="response-info-raw response-info-user-textarea" id="response-info-user" rows="8" readonly>-</textarea>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="response-panel-raw" role="tabpanel" aria-labelledby="response-tab-raw">
+          <div class="app-modal-field">
+            <label>Raw response</label>
+            <pre class="response-info-raw" id="response-info-raw">-</pre>
+          </div>
+        </div>
       </div>
     </div>
   </div>

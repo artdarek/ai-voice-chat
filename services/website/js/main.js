@@ -50,6 +50,8 @@ const responseInfoClose = document.getElementById('response-info-close');
 const responseInfoUsage = document.getElementById('response-info-usage');
 const responseInfoDate = document.getElementById('response-info-date');
 const responseInfoUser = document.getElementById('response-info-user');
+const responseInfoRaw = document.getElementById('response-info-raw');
+const responseTabGeneral = document.getElementById('response-tab-general');
 const systemPromptBackdrop = document.getElementById('system-prompt-backdrop');
 const systemPromptClose = document.getElementById('system-prompt-close');
 const btnSystemPromptCancel = document.getElementById('btn-system-prompt-cancel');
@@ -86,7 +88,7 @@ function appendUserMessage(text, inputType = 'text') {
 /**
  * Persists one assistant message to local chat history.
  */
-function appendAssistantMessage(text, interrupted = false, usage = undefined) {
+function appendAssistantMessage(text, interrupted = false, usage = undefined, rawResponse = undefined) {
   chatHistory = appendHistory(
     chatHistory,
     'assistant',
@@ -94,7 +96,8 @@ function appendAssistantMessage(text, interrupted = false, usage = undefined) {
     activeSessionProvider || settingsModal.getSelectedProvider(),
     interrupted,
     'n/a',
-    usage
+    usage,
+    rawResponse
   );
   updateUsageSummary();
 }
@@ -191,7 +194,7 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
   }
 
   if (finalText) {
-    appendAssistantMessage(finalText, interrupted, bubble._usage);
+    appendAssistantMessage(finalText, interrupted, bubble._usage, bubble._rawResponse);
   }
 
   const usageText = formatUsage(bubble._usage);
@@ -416,12 +419,30 @@ function openResponseInfoModal(messageNode) {
   const hasValidDate = !Number.isNaN(createdAt.getTime());
   responseInfoDate.textContent = hasValidDate ? createdAt.toLocaleString() : '-';
   responseInfoUsage.textContent = formatUsage(messageNode._usage) || '-';
-  responseInfoUser.textContent = findPreviousUserMessageText(messageNode);
+  responseInfoUser.value = findPreviousUserMessageText(messageNode);
+  responseInfoRaw.textContent = messageNode._rawResponse
+    ? JSON.stringify(messageNode._rawResponse, null, 2)
+    : '-';
+  activateResponseGeneralTab();
   responseInfoBackdrop.style.display = 'flex';
 }
 
 function closeResponseInfoModal() {
   responseInfoBackdrop.style.display = 'none';
+}
+
+function activateResponseGeneralTab() {
+  if (!responseTabGeneral) {
+    return;
+  }
+
+  const bootstrapApi = window.bootstrap;
+  if (bootstrapApi?.Tab) {
+    bootstrapApi.Tab.getOrCreateInstance(responseTabGeneral).show();
+    return;
+  }
+
+  responseTabGeneral.click();
 }
 
 function getSavedSystemPrompt() {

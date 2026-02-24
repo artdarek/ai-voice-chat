@@ -806,9 +806,64 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--text);
 }
 
+.response-info-modal {
+  max-width: 680px;
+}
+
+.response-info-tabs {
+  border-bottom-color: var(--border);
+}
+
+.response-info-tabs .nav-link {
+  border-color: transparent;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: -1px;
+}
+
+.response-info-tabs .nav-link:hover {
+  color: var(--text);
+  border-color: transparent;
+}
+
+.response-info-tabs .nav-link.active {
+  color: var(--text);
+  background: #2a2a38;
+  border-color: var(--border) var(--border) #2a2a38;
+}
+
+.response-info-tab-content {
+  padding-top: 12px;
+}
+
 .response-info-user {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.response-info-raw {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #242424;
+  color: #d7d7df;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.response-info-user-textarea {
+  resize: vertical;
+}
+
+.response-info-user-textarea[readonly] {
+  width: 100%;
 }
 
 .system-prompt-textarea {

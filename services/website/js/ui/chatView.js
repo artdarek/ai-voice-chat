@@ -41,7 +41,7 @@ export function createChatView(transcript, emptyState) {
   /**
    * Adds a single chat bubble to the transcript and returns its DOM node.
    */
-  function addBubble(role, text, createdAt, usage) {
+  function addBubble(role, text, createdAt, usage, rawResponse) {
     if (emptyState) {
       emptyState.style.display = 'none';
     }
@@ -97,6 +97,7 @@ export function createChatView(transcript, emptyState) {
     msg._content = content;
     msg._time = timeMeta;
     msg._usage = usage;
+    msg._rawResponse = rawResponse;
     msg._createdAt = Number.isNaN(createdDate.getTime()) ? new Date().toISOString() : createdDate.toISOString();
     return msg;
   }
@@ -112,7 +113,7 @@ export function createChatView(transcript, emptyState) {
       return;
     }
 
-    history.forEach((item) => addBubble(item.role, item.text, item.createdAt, item.usage));
+    history.forEach((item) => addBubble(item.role, item.text, item.createdAt, item.usage, item.rawResponse));
     transcript.scrollTop = transcript.scrollHeight;
   }
 

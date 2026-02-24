@@ -137,6 +137,7 @@ export function createEventRouter(deps) {
       case 'response.done':
         if (getCurrentAiBubble()) {
           getCurrentAiBubble()._usage = extractUsage(event);
+          getCurrentAiBubble()._rawResponse = event;
         }
         finalizeCurrentAssistantBubble(false);
         setAssistantResponding(false);
