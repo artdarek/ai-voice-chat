@@ -664,6 +664,7 @@ button:active { transform: scale(0.97); }
 button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 #btn-connect {
+  height: 36px;
   background: var(--accent);
   color: #fff;
 }
@@ -685,6 +686,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 
 #btn-mute {
+  height: 36px;
   background: var(--surface2);
   color: var(--text);
   border: 1px solid var(--border);

@@ -46,7 +46,7 @@ export function createConnectionPanel(elements, labels) {
   }
 
   function setConnected() {
-    btnConnect.innerHTML = `<i class="bi bi-x-circle"></i> ${disconnectButtonLabel}`;
+    btnConnect.innerHTML = `<i class="bi bi-x-circle"></i>`;
     btnConnect.classList.add('disconnect');
     btnConnect.disabled = false;
     btnMute.style.display = 'inline-flex';
