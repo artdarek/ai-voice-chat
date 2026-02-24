@@ -52,9 +52,12 @@ def _resolve_openai_model(requested_model: str | None) -> str:
         if str(item.get("id", "")).strip() and item.get("enabled", True) is not False
     ]
 
+    if not allowed_ids:
+        raise ProviderConfigError("No enabled OpenAI realtime model configured")
+
     normalized_requested_model = (requested_model or "").strip()
     if normalized_requested_model:
-        if allowed_ids and normalized_requested_model not in allowed_ids:
+        if normalized_requested_model not in allowed_ids:
             raise ProviderConfigError(
                 f"Unsupported or disabled model for provider 'openai': {normalized_requested_model}"
             )
@@ -62,16 +65,13 @@ def _resolve_openai_model(requested_model: str | None) -> str:
 
     default_model = (OPENAI_REALTIME_MODEL or "").strip()
     if default_model:
-        if allowed_ids and default_model not in allowed_ids:
+        if default_model not in allowed_ids:
             raise ProviderConfigError(
                 f"OPENAI_REALTIME_MODEL is not enabled in config/providers.json: {default_model}"
             )
         return default_model
 
-    if allowed_ids:
-        return allowed_ids[0]
-
-    raise ProviderConfigError("No enabled OpenAI realtime model configured")
+    return allowed_ids[0]
 
 
 def _resolve_openai_config(user_api_key: str | None, requested_model: str | None) -> ProviderConnectionConfig:
@@ -102,35 +102,33 @@ def _resolve_azure_deployment(requested_deployment: str | None) -> tuple[str, st
         if str(item.get("name", "")).strip() and item.get("enabled", True) is not False
     ]
 
+    if not allowed_deployments:
+        raise ProviderConfigError("No enabled Azure deployment configured")
+
     normalized_requested_deployment = (requested_deployment or "").strip()
     if normalized_requested_deployment:
         matched = next(
             (item for item in allowed_deployments if item["name"] == normalized_requested_deployment),
             None,
         )
-        if not matched and allowed_deployments:
+        if not matched:
             raise ProviderConfigError(
                 f"Unsupported or disabled deployment for provider 'azure': {normalized_requested_deployment}"
             )
-        return normalized_requested_deployment, matched["model"] if matched else normalized_requested_deployment
+        return normalized_requested_deployment, matched["model"] or normalized_requested_deployment
 
     env_deployment = (AZURE_OPENAI_REALTIME_DEPLOYMENT or "").strip()
     if env_deployment:
-        if allowed_deployments:
-            matched = next((item for item in allowed_deployments if item["name"] == env_deployment), None)
-            if not matched:
-                raise ProviderConfigError(
-                    "AZURE_OPENAI_REALTIME_DEPLOYMENT is not enabled in config/providers.json: "
-                    f"{env_deployment}"
-                )
-            return env_deployment, matched["model"] or env_deployment
-        return env_deployment, env_deployment
+        matched = next((item for item in allowed_deployments if item["name"] == env_deployment), None)
+        if not matched:
+            raise ProviderConfigError(
+                "AZURE_OPENAI_REALTIME_DEPLOYMENT is not enabled in config/providers.json: "
+                f"{env_deployment}"
+            )
+        return env_deployment, matched["model"] or env_deployment
 
-    if allowed_deployments:
-        first = allowed_deployments[0]
-        return first["name"], first["model"] or first["name"]
-
-    raise ProviderConfigError("No enabled Azure deployment configured")
+    first = allowed_deployments[0]
+    return first["name"], first["model"] or first["name"]
 
 
 def _resolve_azure_config(user_api_key: str | None, requested_deployment: str | None) -> ProviderConnectionConfig:
