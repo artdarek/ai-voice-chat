@@ -1,0 +1,25 @@
+services/website/js/ui/chatView.js
+  92b29ccd3c52e447 24,27,74
+services/website/js/ui/usagePresenter.js
+  92b29ccd3c52e447 37-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "49dc0990e4987756078fe717b7fb455926222ae6",
+  "prompts": {
+    "92b29ccd3c52e447": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c908c-293d-7f63-8a15-7d602dcc0dee",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 4,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  }
+}
