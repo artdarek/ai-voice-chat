@@ -71,11 +71,21 @@ deploy-clean:
 ## Restart Docker containers on remote server
 deploy-docker-reload:
 	ssh -t -p "$(REMOTE_PORT)" "$(REMOTE_USER)@$(REMOTE_HOST)" \
-		"cd '$(REMOTE_WWW_PATH)' && docker compose stop && docker compose up --build --remove-orphans -d"
+		"export PATH=\"$$PATH:/usr/local/bin:/usr/bin:/bin\"; \
+		cd '$(REMOTE_WWW_PATH)' && \
+		if command -v docker >/dev/null 2>&1; then \
+			docker compose stop && docker compose up --build --remove-orphans -d; \
+		elif command -v docker-compose >/dev/null 2>&1; then \
+			docker-compose stop && docker-compose up --build --remove-orphans -d; \
+		else \
+			echo 'Docker CLI not found on remote host. Install Docker or add it to PATH.'; \
+			exit 127; \
+		fi"
 
 ## Open SSH session to remote server
 ssh:
-	ssh "$(REMOTE_USER)@$(REMOTE_HOST)" -p "$(REMOTE_PORT)"
+	ssh -t -p "$(REMOTE_PORT)" "$(REMOTE_USER)@$(REMOTE_HOST)" \
+		"cd '$(REMOTE_WWW_PATH)' && exec $${SHELL:-/bin/bash} -l"
 
 ## Show available commands
 help:

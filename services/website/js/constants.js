@@ -3,6 +3,7 @@ export const STORAGE_KEYS = {
   openaiApiKey: 'openai_api_key',
   azureApiKey: 'azure_api_key',
   geminiApiKey: 'gemini_api_key',
+  systemPrompt: 'chat_system_prompt',
   chatHistory: 'chat_history_v1',
 };
 

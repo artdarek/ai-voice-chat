@@ -6,6 +6,7 @@ import { appendHistory, clearHistory, loadHistory } from './storage/historyStore
 import { createChatView } from './ui/chatView.js';
 import { createSettingsModal } from './ui/settingsModal.js';
 import {
+  STORAGE_KEYS,
   STATUS_STATE,
   STATUS_TEXT,
   UI_TEXT,
@@ -21,6 +22,7 @@ let currentAiBubble = null;
 let pendingUserBubble = null;
 let isAssistantResponding = false;
 let activeSessionProvider = null;
+let serverSystemPrompt = 'You are a friendly and polite assistant. Be warm, helpful, and concise in your responses.';
 
 const btnConnect = document.getElementById('btn-connect');
 const btnMute = document.getElementById('btn-mute');
@@ -28,6 +30,7 @@ const btnSend = document.getElementById('btn-send');
 const btnSettings = document.getElementById('btn-settings');
 const btnDownloadChat = document.getElementById('btn-download-chat');
 const btnClearChat = document.getElementById('btn-clear-chat');
+const btnSystemPrompt = document.getElementById('btn-system-prompt');
 const textInput = document.getElementById('text-input');
 const providerSelectInline = document.getElementById('provider-select-inline');
 const voiceSelect = document.getElementById('voice-select');
@@ -42,6 +45,13 @@ const clearConfirmBackdrop = document.getElementById('clear-confirm-backdrop');
 const clearConfirmClose = document.getElementById('clear-confirm-close');
 const btnClearCancel = document.getElementById('btn-clear-cancel');
 const btnClearConfirm = document.getElementById('btn-clear-confirm');
+const systemPromptBackdrop = document.getElementById('system-prompt-backdrop');
+const systemPromptClose = document.getElementById('system-prompt-close');
+const btnSystemPromptCancel = document.getElementById('btn-system-prompt-cancel');
+const btnSystemPromptReset = document.getElementById('btn-system-prompt-reset');
+const btnSystemPromptSave = document.getElementById('btn-system-prompt-save');
+const systemPromptInput = document.getElementById('system-prompt-input');
+const usageSummaryText = document.getElementById('usage-summary-text');
 
 const chatView = createChatView(transcript, emptyState);
 const playback = createOutputPlayback();
@@ -81,6 +91,60 @@ function appendAssistantMessage(text, interrupted = false, usage = undefined) {
     'n/a',
     usage
   );
+  updateUsageSummary();
+}
+
+/**
+ * Returns normalized per-message usage totals with safe fallback inference.
+ */
+function getMessageUsageTotals(usage) {
+  if (!usage || typeof usage !== 'object') {
+    return { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  }
+
+  const hasValue = (value) => Number.isInteger(value) && value >= 0;
+  let inputTokens = hasValue(usage.inputTokens) ? usage.inputTokens : undefined;
+  let outputTokens = hasValue(usage.outputTokens) ? usage.outputTokens : undefined;
+  let totalTokens = hasValue(usage.totalTokens) ? usage.totalTokens : undefined;
+
+  if (typeof inputTokens !== 'number' && typeof totalTokens === 'number' && typeof outputTokens === 'number') {
+    inputTokens = Math.max(0, totalTokens - outputTokens);
+  }
+  if (typeof outputTokens !== 'number' && typeof totalTokens === 'number' && typeof inputTokens === 'number') {
+    outputTokens = Math.max(0, totalTokens - inputTokens);
+  }
+  if (typeof totalTokens !== 'number' && typeof inputTokens === 'number' && typeof outputTokens === 'number') {
+    totalTokens = inputTokens + outputTokens;
+  }
+
+  return {
+    inputTokens: inputTokens || 0,
+    outputTokens: outputTokens || 0,
+    totalTokens: totalTokens || 0,
+  };
+}
+
+/**
+ * Updates conversation-level token totals shown above message input.
+ */
+function updateUsageSummary() {
+  if (!usageSummaryText) {
+    return;
+  }
+
+  const totals = chatHistory.reduce(
+    (acc, item) => {
+      const usage = getMessageUsageTotals(item?.usage);
+      acc.inputTokens += usage.inputTokens;
+      acc.outputTokens += usage.outputTokens;
+      acc.totalTokens += usage.totalTokens;
+      return acc;
+    },
+    { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
+  );
+
+  usageSummaryText.textContent =
+    `in: ${totals.inputTokens} · out: ${totals.outputTokens} · total: ${totals.totalTokens}`;
 }
 
 /**
@@ -278,6 +342,7 @@ async function initSettings() {
 
   btnSettings.style.display = 'flex';
   settingsModal.setServerSettings(payload || undefined);
+  serverSystemPrompt = payload?.chat_system_prompt || serverSystemPrompt;
 
   const provider = settingsModal.getSelectedProvider();
   if (!settingsModal.isProviderSupported(provider) || !settingsModal.hasEffectiveKey(provider)) {
@@ -291,6 +356,7 @@ async function initSettings() {
 function restoreChatHistory() {
   chatHistory = loadHistory();
   chatView.renderHistory(chatHistory);
+  updateUsageSummary();
 }
 
 /**
@@ -301,6 +367,7 @@ function clearConversationMemory() {
   chatView.clearTranscriptView();
   currentAiBubble = null;
   pendingUserBubble = null;
+  updateUsageSummary();
 }
 
 /**
@@ -315,6 +382,49 @@ function openClearConfirmModal() {
  */
 function closeClearConfirmModal() {
   clearConfirmBackdrop.style.display = 'none';
+}
+
+function getSavedSystemPrompt() {
+  return localStorage.getItem(STORAGE_KEYS.systemPrompt) || '';
+}
+
+function getEffectiveSystemPrompt() {
+  return getSavedSystemPrompt() || serverSystemPrompt;
+}
+
+function openSystemPromptModal() {
+  systemPromptInput.value = getEffectiveSystemPrompt();
+  systemPromptBackdrop.style.display = 'flex';
+  setTimeout(() => systemPromptInput.focus(), 50);
+}
+
+function closeSystemPromptModal() {
+  systemPromptBackdrop.style.display = 'none';
+}
+
+function saveSystemPrompt() {
+  const value = systemPromptInput.value.trim();
+  if (value && value !== serverSystemPrompt) {
+    localStorage.setItem(STORAGE_KEYS.systemPrompt, value);
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.systemPrompt);
+  }
+
+  closeSystemPromptModal();
+
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(
+      JSON.stringify({
+        type: 'session.update',
+        session: { instructions: getEffectiveSystemPrompt() },
+      })
+    );
+  }
+}
+
+function resetSystemPromptDraft() {
+  systemPromptInput.value = serverSystemPrompt;
+  systemPromptInput.focus();
 }
 
 /**
@@ -415,7 +525,10 @@ async function connect() {
     ws.send(
       JSON.stringify({
         type: 'session.update',
-        session: { voice: voiceSelect.value },
+        session: {
+          voice: voiceSelect.value,
+          instructions: getEffectiveSystemPrompt(),
+        },
       })
     );
 
@@ -490,6 +603,25 @@ clearConfirmBackdrop.addEventListener('click', (e) => {
   }
 });
 
+btnSystemPrompt.addEventListener('click', openSystemPromptModal);
+systemPromptClose.addEventListener('click', closeSystemPromptModal);
+btnSystemPromptReset.addEventListener('click', resetSystemPromptDraft);
+btnSystemPromptCancel.addEventListener('click', closeSystemPromptModal);
+btnSystemPromptSave.addEventListener('click', saveSystemPrompt);
+
+systemPromptInput.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    saveSystemPrompt();
+  }
+});
+
+systemPromptBackdrop.addEventListener('click', (e) => {
+  if (e.target === systemPromptBackdrop) {
+    closeSystemPromptModal();
+  }
+});
+
 voiceSelect.addEventListener('change', () => {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(
@@ -518,6 +650,9 @@ textInput.addEventListener('input', () => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && clearConfirmBackdrop.style.display !== 'none') {
     closeClearConfirmModal();
+  }
+  if (e.key === 'Escape' && systemPromptBackdrop.style.display !== 'none') {
+    closeSystemPromptModal();
   }
 });
 

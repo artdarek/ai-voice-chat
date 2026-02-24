@@ -55,9 +55,15 @@
 
     <footer class="container-xl">
       <div class="controls-wrap">
-        <div class="status status-inline">
-          <span class="status-dot" id="status-dot"></span>
-          <span id="status-text">Disconnected</span>
+        <div class="status-usage-row">
+          <div class="status status-inline">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">Disconnected</span>
+          </div>
+          <span class="usage-summary-value">
+            <i class="bi bi-bar-chart-line usage-summary-icon" aria-hidden="true"></i>
+            <span id="usage-summary-text">in: 0 · out: 0 · total: 0</span>
+          </span>
         </div>
 
         <!-- Text input row -->
@@ -100,6 +106,16 @@
                 <option value="verse">Verse</option>
               </select>
             </div>
+
+            <button
+              id="btn-system-prompt"
+              class="btn-icon control-icon-btn"
+              aria-label="System prompt settings"
+              title="Edit system prompt"
+              type="button"
+            >
+              <i class="bi bi-sliders"></i>
+            </button>
           </div>
 
           <div class="action-group d-flex align-items-center">
@@ -184,6 +200,36 @@
         <div class="app-modal-actions-right">
           <button class="btn-secondary" id="btn-clear-cancel">Cancel</button>
           <button class="btn-danger" id="btn-clear-confirm">Delete history</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Prompt Modal -->
+  <div class="app-modal-backdrop" id="system-prompt-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="system-prompt-title">
+    <div class="app-modal">
+      <div class="app-modal-header">
+        <h2 id="system-prompt-title">System prompt</h2>
+        <button class="app-modal-close" id="system-prompt-close" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="app-modal-field">
+        <label for="system-prompt-input">Instructions</label>
+        <textarea
+          id="system-prompt-input"
+          class="system-prompt-textarea"
+          rows="8"
+          spellcheck="false"
+        ></textarea>
+      </div>
+
+      <div class="app-modal-actions">
+        <button class="btn-secondary" id="btn-system-prompt-reset">Reset</button>
+        <div class="app-modal-actions-right">
+          <button class="btn-secondary" id="btn-system-prompt-cancel">Cancel</button>
+          <button class="btn-primary" id="btn-system-prompt-save">Save</button>
         </div>
       </div>
     </div>

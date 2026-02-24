@@ -366,6 +366,36 @@ footer {
   gap: 8px;
 }
 
+.status-usage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 20px;
+  margin-bottom: -1px;
+}
+
+.status-usage-row .status-inline {
+  margin-bottom: 0;
+  padding-left: 0;
+}
+
+.usage-summary-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.73rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  margin-left: auto;
+}
+
+.usage-summary-icon {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
 /* ── Text input row ── */
 .input-row {
   display: flex;
@@ -458,6 +488,23 @@ footer {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.control-icon-btn {
+  box-sizing: border-box;
+  height: 36px;
+  min-width: 36px;
+  background: #252525;
+  border: 1px solid #323232;
+  border-radius: 10px;
+  color: #7d7d89;
+  padding: 0;
+}
+
+.control-icon-btn:hover {
+  background: #282828;
+  border-color: #383838;
+  color: #888894;
 }
 
 /* ── Voice selector ── */
@@ -720,6 +767,25 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .provider-hint {
   font-size: 0.77rem;
   color: var(--text-dim);
+}
+
+.system-prompt-textarea {
+  width: 100%;
+  min-height: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  line-height: 1.5;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.system-prompt-textarea:focus {
+  border-color: var(--accent);
 }
 
 .btn-eye {

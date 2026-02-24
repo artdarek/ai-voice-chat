@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from config import (
     AZURE_OPENAI_API_KEY,
+    CHAT_SYSTEM_PROMPT,
     DEFAULT_LLM_PROVIDER,
     GEMINI_API_KEY,
     OPENAI_API_KEY,
@@ -23,5 +24,6 @@ async def settings() -> JSONResponse:
                 "azure": {"server_key": bool(AZURE_OPENAI_API_KEY)},
                 "gemini": {"server_key": bool(GEMINI_API_KEY)},
             },
+            "chat_system_prompt": CHAT_SYSTEM_PROMPT,
         }
     )
