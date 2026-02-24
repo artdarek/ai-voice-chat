@@ -1,0 +1,23 @@
+services/website/js/storage/historyStore.js
+  e2e111053c0059df 67,89-112,133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "dd1391b25e3787a8415fef274d7de5661ef47610",
+  "prompts": {
+    "e2e111053c0059df": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c9125-4756-7180-9b94-c2000bebec07",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 2,
+      "accepted_lines": 26,
+      "overriden_lines": 0
+    }
+  }
+}
