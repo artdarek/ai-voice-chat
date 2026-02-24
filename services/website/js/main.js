@@ -216,8 +216,16 @@ function updateUsageSummary() {
     }
   );
 
-  usageSummaryText.textContent =
-    `in ${totals.inputTextTokens}/${totals.inputAudioTokens} (${totals.inputTokens}) · out ${totals.outputTextTokens}/${totals.outputAudioTokens} (${totals.outputTokens}) · total ${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})`;
+  const totalAudioTokens = totals.inputAudioTokens + totals.outputAudioTokens;
+  const totalTextTokens = totals.inputTextTokens + totals.outputTextTokens;
+  usageSummaryText.innerHTML = [
+    `<i class="bi bi-bar-chart-line usage-summary-icon" aria-hidden="true"></i><span>Usage:</span>`,
+    `<i class="bi bi-volume-up-fill usage-summary-icon" aria-hidden="true"></i><span>${totals.inputAudioTokens}/${totals.outputAudioTokens} (${totalAudioTokens})</span>`,
+    `<span>·</span>`,
+    `<i class="bi bi-chat-text-fill usage-summary-icon" aria-hidden="true"></i><span>${totals.inputTextTokens}/${totals.outputTextTokens} (${totalTextTokens})</span>`,
+    `<span>·</span>`,
+    `<i class="bi bi-calculator usage-summary-icon" aria-hidden="true"></i><span>${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})</span>`,
+  ].join(' ');
 
   if (usageSummaryInteractions) {
     const interactions = chatHistory.reduce(
@@ -231,17 +239,22 @@ function updateUsageSummary() {
 /**
  * Formats optional usage metadata into a compact token summary.
  */
-function formatUsage(usage, rawResponse) {
+function formatUsageMarkup(usage, rawResponse) {
   if ((!usage || typeof usage !== 'object') && (!rawResponse || typeof rawResponse !== 'object')) {
     return '';
   }
 
   const totals = getUsageBreakdown(usage, rawResponse);
+  const totalAudioTokens = totals.inputAudioTokens + totals.outputAudioTokens;
+  const totalTextTokens = totals.inputTextTokens + totals.outputTextTokens;
   return [
-    `in ${totals.inputTextTokens}/${totals.inputAudioTokens} (${totals.inputTokens})`,
-    `out ${totals.outputTextTokens}/${totals.outputAudioTokens} (${totals.outputTokens})`,
-    `total ${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})`,
-  ].join(' · ');
+    `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>Usage:</span>`,
+    `<i class="bi bi-volume-up-fill message-usage-icon" aria-hidden="true"></i><span>${totals.inputAudioTokens}/${totals.outputAudioTokens} (${totalAudioTokens})</span>`,
+    `<span>·</span>`,
+    `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>${totals.inputTextTokens}/${totals.outputTextTokens} (${totalTextTokens})</span>`,
+    `<span>·</span>`,
+    `<i class="bi bi-calculator message-usage-icon" aria-hidden="true"></i><span>${totals.inputTokens}/${totals.outputTokens} (${totals.totalTokens})</span>`,
+  ].join(' ');
 }
 
 /**
@@ -263,11 +276,11 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
     appendAssistantMessage(finalText, interrupted, bubble._usage, bubble._rawResponse);
   }
 
-  const usageText = formatUsage(bubble._usage, bubble._rawResponse);
-  if (usageText && bubble._time && !bubble._time.querySelector('.message-usage')) {
+  const usageMarkup = formatUsageMarkup(bubble._usage, bubble._rawResponse);
+  if (usageMarkup && bubble._time && !bubble._time.querySelector('.message-usage')) {
     const usageMeta = document.createElement('span');
     usageMeta.className = 'message-usage';
-    usageMeta.innerHTML = `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>${usageText}</span>`;
+    usageMeta.innerHTML = usageMarkup;
     const infoButton = bubble._time.querySelector('.message-info-btn');
     if (infoButton) {
       bubble._time.insertBefore(usageMeta, infoButton);
@@ -557,6 +570,14 @@ function extractUsageTokenBreakdown(rawResponse) {
   const getTotalString = (input, output) => (
     typeof input === 'number' && typeof output === 'number' ? String(input + output) : '-'
   );
+  const formatInWithCache = (total, cached) => {
+    if (typeof total !== 'number') {
+      return '-';
+    }
+    const normalizedCached = typeof cached === 'number' ? Math.min(Math.max(cached, 0), total) : 0;
+    const nonCached = Math.max(0, total - normalizedCached);
+    return `${total} (${nonCached}/${normalizedCached})`;
+  };
 
   const inputDetails = usage.input_token_details || usage.inputTokenDetails || {};
   const outputDetails = usage.output_token_details || usage.outputTokenDetails || {};
@@ -564,12 +585,29 @@ function extractUsageTokenBreakdown(rawResponse) {
   const textIn = toTokenInt(inputDetails.text_tokens ?? inputDetails.textTokens);
   const audioOut = toTokenInt(outputDetails.audio_tokens ?? outputDetails.audioTokens);
   const textOut = toTokenInt(outputDetails.text_tokens ?? outputDetails.textTokens);
+  const cachedDetails = inputDetails.cached_tokens_details || inputDetails.cachedTokenDetails || {};
+  const audioCachedIn = toTokenInt(
+    cachedDetails.audio_tokens ??
+    cachedDetails.audioTokens ??
+    inputDetails.audio_cached_tokens ??
+    inputDetails.audioCachedTokens ??
+    inputDetails.cached_audio_tokens ??
+    inputDetails.cachedAudioTokens
+  ) || 0;
+  const textCachedIn = toTokenInt(
+    cachedDetails.text_tokens ??
+    cachedDetails.textTokens ??
+    inputDetails.text_cached_tokens ??
+    inputDetails.textCachedTokens ??
+    inputDetails.cached_text_tokens ??
+    inputDetails.cachedTextTokens
+  ) || 0;
 
   return {
-    audioIn: toTokenString(audioIn),
+    audioIn: formatInWithCache(audioIn, audioCachedIn),
     audioOut: toTokenString(audioOut),
     audioTotal: getTotalString(audioIn, audioOut),
-    textIn: toTokenString(textIn),
+    textIn: formatInWithCache(textIn, textCachedIn),
     textOut: toTokenString(textOut),
     textTotal: getTotalString(textIn, textOut),
   };

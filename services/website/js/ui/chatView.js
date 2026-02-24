@@ -18,17 +18,23 @@ export function createChatView(transcript, emptyState) {
   /**
    * Formats optional usage metadata into a compact token summary.
    */
-  function formatUsage(usage, rawResponse) {
+  function formatUsageMarkup(usage, rawResponse) {
     const breakdown = extractUsageBreakdown(usage, rawResponse);
     if (!breakdown) {
       return '';
     }
 
+    const totalAudioTokens = breakdown.inputAudioTokens + breakdown.outputAudioTokens;
+    const totalTextTokens = breakdown.inputTextTokens + breakdown.outputTextTokens;
+
     return [
-      `in ${breakdown.inputTextTokens}/${breakdown.inputAudioTokens} (${breakdown.inputTokens})`,
-      `out ${breakdown.outputTextTokens}/${breakdown.outputAudioTokens} (${breakdown.outputTokens})`,
-      `total ${breakdown.inputTokens}/${breakdown.outputTokens} (${breakdown.totalTokens})`,
-    ].join(' · ');
+      `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>Usage:</span>`,
+      `<i class="bi bi-volume-up-fill message-usage-icon" aria-hidden="true"></i><span>${breakdown.inputAudioTokens}/${breakdown.outputAudioTokens} (${totalAudioTokens})</span>`,
+      `<span>·</span>`,
+      `<i class="bi bi-chat-text-fill message-usage-icon" aria-hidden="true"></i><span>${breakdown.inputTextTokens}/${breakdown.outputTextTokens} (${totalTextTokens})</span>`,
+      `<span>·</span>`,
+      `<i class="bi bi-calculator message-usage-icon" aria-hidden="true"></i><span>${breakdown.inputTokens}/${breakdown.outputTokens} (${breakdown.totalTokens})</span>`,
+    ].join(' ');
   }
 
   function extractUsageBreakdown(usage, rawResponse) {
@@ -111,11 +117,11 @@ export function createChatView(transcript, emptyState) {
     timeMeta.className = 'message-time';
     const createdDate = createdAt ? new Date(createdAt) : new Date();
 
-    const usageValue = formatUsage(usage, rawResponse);
-    if (usageValue) {
+    const usageMarkup = formatUsageMarkup(usage, rawResponse);
+    if (usageMarkup) {
       const usageMeta = document.createElement('span');
       usageMeta.className = 'message-usage';
-      usageMeta.innerHTML = `<i class="bi bi-bar-chart-line message-usage-icon" aria-hidden="true"></i><span>${usageValue}</span>`;
+      usageMeta.innerHTML = usageMarkup;
       timeMeta.appendChild(usageMeta);
     }
 

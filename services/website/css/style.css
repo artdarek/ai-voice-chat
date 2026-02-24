@@ -449,6 +449,12 @@ footer {
   opacity: 0.85;
 }
 
+#usage-summary-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .usage-summary-separator {
   opacity: 0.5;
   margin: 0 2px;
