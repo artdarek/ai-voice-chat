@@ -16,6 +16,7 @@ export function downloadChatHistoryCsv(history) {
 
   const header = [
     'id',
+    'interactionId',
     'createdAt',
     'provider',
     'role',
@@ -84,6 +85,7 @@ export function downloadChatHistoryCsv(history) {
       const breakdown = extractTokenBreakdown(item);
       return [
       item.id || '',
+      item.interactionId || '',
       item.createdAt || '',
       item.provider || 'unknown',
       item.role || '',

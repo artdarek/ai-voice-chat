@@ -23,6 +23,7 @@ let currentAiBubble = null;
 let pendingUserBubble = null;
 let isAssistantResponding = false;
 let activeSessionProvider = null;
+let activeInteractionId = null;
 let serverSystemPrompt = 'You are a friendly and polite assistant. Be warm, helpful, and concise in your responses.';
 
 const btnConnect = document.getElementById('btn-connect');
@@ -84,25 +85,34 @@ function setStatus(text, state) {
   statusDot.className = 'status-dot ' + (state || '');
 }
 
+function createInteractionId() {
+  return `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 /**
  * Persists one user message to local chat history.
  */
-function appendUserMessage(text, inputType = 'text') {
-  chatHistory = appendHistory(
+function appendUserMessage(text, inputType = 'text', interactionId = undefined) {
+  const nextHistory = appendHistory(
     chatHistory,
     'user',
     text,
     activeSessionProvider || settingsModal.getSelectedProvider(),
     false,
-    inputType
+    inputType,
+    undefined,
+    undefined,
+    interactionId
   );
+  chatHistory = nextHistory;
+  return nextHistory[nextHistory.length - 1];
 }
 
 /**
  * Persists one assistant message to local chat history.
  */
-function appendAssistantMessage(text, interrupted = false, usage = undefined, rawResponse = undefined) {
-  chatHistory = appendHistory(
+function appendAssistantMessage(text, interrupted = false, usage = undefined, rawResponse = undefined, interactionId = undefined) {
+  const nextHistory = appendHistory(
     chatHistory,
     'assistant',
     text,
@@ -110,9 +120,12 @@ function appendAssistantMessage(text, interrupted = false, usage = undefined, ra
     interrupted,
     'n/a',
     usage,
-    rawResponse
+    rawResponse,
+    interactionId
   );
+  chatHistory = nextHistory;
   updateUsageSummary();
+  return nextHistory[nextHistory.length - 1];
 }
 
 /**
@@ -282,7 +295,9 @@ function finalizeCurrentAssistantBubble(interrupted = false) {
   }
 
   if (finalText) {
-    appendAssistantMessage(finalText, interrupted, bubble._usage, bubble._rawResponse);
+    const assistantEntry = appendAssistantMessage(finalText, interrupted, bubble._usage, bubble._rawResponse, bubble._interactionId);
+    bubble._historyId = assistantEntry?.id;
+    activeInteractionId = null;
   }
 
   const usageMarkup = formatUsageMarkup(bubble._usage, bubble._rawResponse);
@@ -335,6 +350,7 @@ function setDisconnectedUi() {
   isAssistantResponding = false;
   activeSessionProvider = null;
   pendingUserBubble = null;
+  activeInteractionId = null;
 }
 
 /**
@@ -416,6 +432,11 @@ const eventRouter = createEventRouter({
     currentAiBubble = bubble;
   },
   getCurrentAiBubble: () => currentAiBubble,
+  createInteractionId,
+  setActiveInteractionId: (interactionId) => {
+    activeInteractionId = interactionId;
+  },
+  getActiveInteractionId: () => activeInteractionId,
   setAssistantResponding: (active) => {
     isAssistantResponding = active;
   },
@@ -468,6 +489,7 @@ function clearConversationMemory() {
   chatView.clearTranscriptView();
   currentAiBubble = null;
   pendingUserBubble = null;
+  activeInteractionId = null;
   updateUsageSummary();
 }
 
@@ -489,7 +511,7 @@ function findPreviousUserMessageText(messageNode) {
   let cursor = messageNode?.previousElementSibling || null;
   while (cursor) {
     if (cursor.classList?.contains('message') && cursor.classList?.contains('user')) {
-      const content = cursor.querySelector('.message-content');
+      const content = cursor.querySelector('.message-content-text') || cursor.querySelector('.message-content');
       return (content?.textContent || '').trim() || '-';
     }
     cursor = cursor.previousElementSibling;
@@ -497,24 +519,60 @@ function findPreviousUserMessageText(messageNode) {
   return '-';
 }
 
+function findModalContextFromHistory(historyId) {
+  if (!historyId) {
+    return null;
+  }
+
+  const assistantIndex = chatHistory.findIndex((item) => item.id === historyId && item.role === 'assistant');
+  if (assistantIndex < 0) {
+    return null;
+  }
+
+  const assistant = chatHistory[assistantIndex];
+  let userText = '-';
+  if (assistant.interactionId) {
+    const pairedUser = chatHistory.find((item) => item.role === 'user' && item.interactionId === assistant.interactionId);
+    if (pairedUser?.text) {
+      userText = pairedUser.text.trim() || '-';
+    }
+  }
+
+  if (userText === '-') {
+    for (let i = assistantIndex - 1; i >= 0; i -= 1) {
+      if (chatHistory[i]?.role === 'user') {
+        userText = (chatHistory[i].text || '').trim() || '-';
+        break;
+      }
+    }
+  }
+
+  return { assistant, userText };
+}
+
 function openResponseInfoModal(messageNode) {
   if (!messageNode) {
     return;
   }
 
-  const createdAtIso = messageNode._createdAt;
+  const historyContext = findModalContextFromHistory(messageNode._historyId);
+  const sourceEntry = historyContext?.assistant;
+  const sourceUsage = sourceEntry?.usage ?? messageNode._usage;
+  const sourceRawResponse = sourceEntry?.rawResponse ?? messageNode._rawResponse;
+  const sourceUserText = historyContext?.userText ?? findPreviousUserMessageText(messageNode);
+  const createdAtIso = sourceEntry?.createdAt ?? messageNode._createdAt;
   const createdAt = createdAtIso ? new Date(createdAtIso) : new Date();
   const hasValidDate = !Number.isNaN(createdAt.getTime());
-  const usageDisplay = getUsageDisplayValues(messageNode._usage);
+  const usageDisplay = getUsageDisplayValues(sourceUsage);
   responseInfoDate.textContent = hasValidDate ? createdAt.toLocaleString() : '-';
   responseInfoUsageIn.textContent = usageDisplay.inputTokens;
   responseInfoUsageOut.textContent = usageDisplay.outputTokens;
   responseInfoUsageTotal.textContent = usageDisplay.totalTokens;
-  responseInfoUser.value = findPreviousUserMessageText(messageNode);
-  responseInfoRaw.textContent = messageNode._rawResponse
-    ? JSON.stringify(messageNode._rawResponse, null, 2)
+  responseInfoUser.value = sourceUserText;
+  responseInfoRaw.textContent = sourceRawResponse
+    ? JSON.stringify(sourceRawResponse, null, 2)
     : '-';
-  const usageDetails = extractUsageTokenBreakdown(messageNode._rawResponse);
+  const usageDetails = extractUsageTokenBreakdown(sourceRawResponse);
   responseInfoAudioIn.textContent = usageDetails.audioIn;
   responseInfoTextIn.textContent = usageDetails.textIn;
   responseInfoAudioOut.textContent = usageDetails.audioOut;
@@ -737,8 +795,11 @@ function sendTextMessage() {
     isAssistantResponding = false;
   }
 
-  chatView.addBubble('user', text);
-  appendUserMessage(text, 'text');
+  const interactionId = createInteractionId();
+  activeInteractionId = interactionId;
+  const userBubble = chatView.addBubble('user', text);
+  userBubble._interactionId = interactionId;
+  appendUserMessage(text, 'text', interactionId);
 
   textInput.value = '';
   textInput.style.height = 'auto';

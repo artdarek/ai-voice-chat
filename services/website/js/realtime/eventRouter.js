@@ -52,6 +52,9 @@ export function createEventRouter(deps) {
     getPendingUserBubble,
     setCurrentAiBubble,
     getCurrentAiBubble,
+    createInteractionId,
+    setActiveInteractionId,
+    getActiveInteractionId,
     setAssistantResponding,
     getAssistantResponding,
     finalizeCurrentAssistantBubble,
@@ -76,6 +79,8 @@ export function createEventRouter(deps) {
           setAssistantResponding(false);
         }
         const pending = chatView.addBubble('user pending', UI_TEXT.pendingTranscription);
+        pending._interactionId = createInteractionId();
+        setActiveInteractionId(pending._interactionId);
         setPendingUserBubble(pending);
         playback.reset();
         break;
@@ -89,14 +94,19 @@ export function createEventRouter(deps) {
           if (transcriptText) {
             pendingUserBubble._content.textContent = transcriptText;
             pendingUserBubble.classList.remove('pending');
-            appendUserMessage(transcriptText, 'voice');
+            appendUserMessage(transcriptText, 'voice', pendingUserBubble._interactionId);
+            setActiveInteractionId(pendingUserBubble._interactionId);
           } else {
             pendingUserBubble.remove();
+            setActiveInteractionId(null);
           }
           setPendingUserBubble(null);
         } else if (transcriptText) {
-          chatView.addBubble('user', transcriptText);
-          appendUserMessage(transcriptText, 'voice');
+          const interactionId = createInteractionId();
+          const bubble = chatView.addBubble('user', transcriptText);
+          bubble._interactionId = interactionId;
+          appendUserMessage(transcriptText, 'voice', interactionId);
+          setActiveInteractionId(interactionId);
         }
         break;
       }
@@ -118,6 +128,7 @@ export function createEventRouter(deps) {
         let currentAiBubble = getCurrentAiBubble();
         if (!currentAiBubble) {
           currentAiBubble = chatView.addBubble('assistant streaming', '');
+          currentAiBubble._interactionId = getActiveInteractionId() || createInteractionId();
           setCurrentAiBubble(currentAiBubble);
         }
 

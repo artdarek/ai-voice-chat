@@ -30,6 +30,13 @@ function isRawResponseValid(rawResponse) {
 }
 
 /**
+ * Validates optional interaction (run) identifier shared by user/assistant pair.
+ */
+function isInteractionIdValid(interactionId) {
+  return typeof interactionId === 'undefined' || typeof interactionId === 'string';
+}
+
+/**
  * Checks whether a parsed storage item matches expected chat message shape.
  */
 function isHistoryItemValid(item) {
@@ -42,7 +49,8 @@ function isHistoryItemValid(item) {
     (typeof item.interrupted === 'boolean' || typeof item.interrupted === 'undefined') &&
     (typeof item.inputType === 'string' || typeof item.inputType === 'undefined') &&
     isUsageValid(item.usage) &&
-    isRawResponseValid(item.rawResponse)
+    isRawResponseValid(item.rawResponse) &&
+    isInteractionIdValid(item.interactionId)
   );
 }
 
@@ -72,6 +80,7 @@ function normalizeHistory(raw) {
           }
         : undefined,
       rawResponse: isRawResponseValid(item.rawResponse) ? item.rawResponse : undefined,
+      interactionId: isInteractionIdValid(item.interactionId) ? item.interactionId : undefined,
     }));
 }
 
@@ -113,7 +122,8 @@ export function appendHistory(
   interrupted = false,
   inputType = 'n/a',
   usage = undefined,
-  rawResponse = undefined
+  rawResponse = undefined,
+  interactionId = undefined
 ) {
   const normalizedText = (text || '').trim();
   if (!normalizedText) {
@@ -130,6 +140,7 @@ export function appendHistory(
     inputType: (inputType || 'n/a').toLowerCase(),
     usage: isUsageValid(usage) ? usage : undefined,
     rawResponse: isRawResponseValid(rawResponse) ? rawResponse : undefined,
+    interactionId: isInteractionIdValid(interactionId) ? interactionId : undefined,
   };
 
   return saveHistory([...history, entry]);
