@@ -82,8 +82,12 @@ deploy-docker-reload:
 			exit 127; \
 		fi"
 
-## Open SSH session to remote server
+## Open SSH session to remote server (Default)
 ssh:
+	ssh $(REMOTE_USER)@$(REMOTE_HOST) -p $(REMOTE_PORT)
+
+## Open SSH session to remote server
+ssh-www:
 	ssh -t -p "$(REMOTE_PORT)" "$(REMOTE_USER)@$(REMOTE_HOST)" \
 		"cd '$(REMOTE_WWW_PATH)' && exec $${SHELL:-/bin/bash} -l"
 
