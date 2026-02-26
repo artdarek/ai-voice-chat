@@ -1,0 +1,23 @@
+Makefile
+  33939a094df4b625 88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.5",
+  "base_commit_sha": "075926e954395bfbd2a4fef2e46519b4bd1e1211",
+  "prompts": {
+    "33939a094df4b625": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019c93a9-bd93-7772-8647-6c0f66d26212",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Dariusz Przada <dariusz.przada@miquido.com>",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 2,
+      "accepted_lines": 1,
+      "overriden_lines": 4
+    }
+  }
+}
